@@ -95,6 +95,7 @@ export function CreateSubdomain() {
       const updated = [...formData.beneficiaries]
       updated[idx] = { ...updated[idx], resolvedAddress: beneficiary.input, isResolved: true }
       setFormData({ ...formData, beneficiaries: updated })
+      toast.success("Address validated")
       return
     }
     
@@ -109,16 +110,18 @@ export function CreateSubdomain() {
     setFormData({ ...formData, beneficiaries: updated })
 
     try {
-      // Use dynamic import to resolve ENS
+      // Import required modules
       const { normalize } = await import('viem/ens')
       const { createPublicClient, http } = await import('viem')
       const { mainnet } = await import('viem/chains')
       
+      // Create public client for ENS resolution
       const client = createPublicClient({
         chain: mainnet,
-        transport: http(),
+        transport: http('https://eth.llamarpc.com'), // Use reliable RPC endpoint
       })
       
+      // Resolve ENS name
       const address = await client.getEnsAddress({
         name: normalize(beneficiary.input),
       })
@@ -127,15 +130,16 @@ export function CreateSubdomain() {
         const updated = [...formData.beneficiaries]
         updated[idx] = { ...updated[idx], resolvedAddress: address, isResolving: false, isResolved: true }
         setFormData({ ...formData, beneficiaries: updated })
-        toast.success(`Resolved ${beneficiary.input} to ${address.slice(0, 6)}...${address.slice(-4)}`)
+        toast.success(`✅ Resolved ${beneficiary.input} to ${address.slice(0, 6)}...${address.slice(-4)}`)
       } else {
         throw new Error("ENS name not found")
       }
     } catch (error: any) {
+      console.error('ENS Resolution Error:', error)
       const updated = [...formData.beneficiaries]
       updated[idx] = { ...updated[idx], isResolving: false, isResolved: false, resolvedAddress: null }
       setFormData({ ...formData, beneficiaries: updated })
-      toast.error(`Failed to resolve ${beneficiary.input}`)
+      toast.error(`Failed to resolve ${beneficiary.input}: ${error.message || 'Unknown error'}`)
     }
   }
 
@@ -187,27 +191,33 @@ export function CreateSubdomain() {
         beneficiaryShares[beneficiaryShares.length - 1] += difference
       }
 
-      toast.loading("Creating subdomain...")
+      const toastId = toast.loading("Creating subdomain...")
 
       let hash
-      if (formData.isLocked) {
-        hash = await createLockedSubdomain(
-          formData.parentDomain,
-          formData.subdomainLabel,
-          formData.ownerAddress,
-          parseInt(formData.royaltyPercent),
-          beneficiaryAddresses,
-          beneficiaryShares,
-        )
-      } else {
-        hash = await createSubdomain(
-          formData.parentDomain,
-          formData.subdomainLabel,
-          formData.ownerAddress,
-          parseInt(formData.royaltyPercent),
-          beneficiaryAddresses,
-          beneficiaryShares,
-        )
+      try {
+        if (formData.isLocked) {
+          hash = await createLockedSubdomain(
+            formData.parentDomain,
+            formData.subdomainLabel,
+            formData.ownerAddress,
+            parseInt(formData.royaltyPercent),
+            beneficiaryAddresses,
+            beneficiaryShares,
+          )
+        } else {
+          hash = await createSubdomain(
+            formData.parentDomain,
+            formData.subdomainLabel,
+            formData.ownerAddress,
+            parseInt(formData.royaltyPercent),
+            beneficiaryAddresses,
+            beneficiaryShares,
+          )
+        }
+        toast.dismiss(toastId)
+      } catch (txError: any) {
+        toast.dismiss(toastId)
+        throw txError
       }
 
       toast.success(
@@ -322,13 +332,14 @@ export function CreateSubdomain() {
                 type="number"
                 min="0"
                 max="100"
+                step="0.1"
                 placeholder="10"
                 value={formData.royaltyPercent}
                 onChange={(e) => setFormData({ ...formData, royaltyPercent: e.target.value })}
                 className="w-full bg-input border border-border rounded-lg px-4 py-2 text-foreground placeholder:text-muted-foreground focus:border-primary outline-none transition"
               />
               <p className="text-xs text-muted-foreground mt-1">
-                Percentage of revenue sent to parent domain owner
+                Percentage of revenue sent to parent domain owner (in basis points: 1% = 100 BPS)
               </p>
             </div>
           </div>
@@ -541,7 +552,7 @@ export function CreateSubdomain() {
               className="bg-gradient-to-r from-primary to-accent hover:shadow-lg"
               disabled={
                 (step === 1 && (!formData.parentDomain || !formData.subdomainLabel || !formData.ownerAddress)) ||
-                (step === 2 && (totalPercent !== 100 || formData.beneficiaries.some(b => !b.isResolved)))
+                (step === 2 && (Math.abs(totalPercent - 100) > 0.01 || formData.beneficiaries.some(b => !b.isResolved)))
               }
             >
               Next

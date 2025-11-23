@@ -27,8 +27,9 @@ export function useSubdomainFactory() {
     const hash = await writeContractAsync({
       address: CONTRACTS.SubdomainFactory.address,
       abi: SubdomainFactoryABI,
-      functionName: 'createSubdomainWithRoyalty',
+      functionName: 'createSubdomain',
       args: [parentNode, label, owner, BigInt(royaltyBps), beneficiaries, shares.map(BigInt)],
+      gas: BigInt(3000000), // Set reasonable gas limit
     });
     
     return hash;
@@ -50,6 +51,7 @@ export function useSubdomainFactory() {
       abi: SubdomainFactoryABI,
       functionName: 'createLockedSubdomain',
       args: [parentNode, label, owner, BigInt(royaltyBps), beneficiaries, shares.map(BigInt)],
+      gas: BigInt(3000000), // Set reasonable gas limit
     });
     
     return hash;
