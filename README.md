@@ -338,6 +338,40 @@ See [CONTRIBUTING.md](./CONTRIBUTING.md) for guidelines.
 - OpenZeppelin for secure smart contract libraries
 - ETHGlobal for hackathon inspiration
 
+## 🤖 AI Attribution
+
+As required by the ETHGlobal hackathon guidelines, we clearly document where and how AI tools were used in this project:
+
+### AI Tools Used
+
+1. **v0 by Vercel** - Frontend UI Generation
+   - **Files Generated**: 
+     - `packages/frontend/components/landing/*` - All landing page components (hero, features, footer, etc.)
+     - `packages/frontend/components/app/*` - App interface components (header, sidebar, tabs)
+     - `packages/frontend/components/ui/*` - UI component library (buttons, cards, dialogs, etc.)
+     - `packages/frontend/app/page.tsx` - Landing page layout
+     - `packages/frontend/app/app/page.tsx` - Application page
+   - **Scope**: Complete frontend UI/UX design and component structure
+
+2. **GitHub Copilot (VS Code)** - Development Assistance
+   - **Smart Contract Development**: Code suggestions and optimization for Solidity contracts
+   - **Backend-Frontend Integration**: 
+     - Wallet connection setup (`packages/frontend/lib/config/wagmi.ts`)
+     - AppKit provider configuration (`packages/frontend/lib/context/appkit-provider.tsx`)
+     - ENS name resolution implementation (`packages/frontend/components/app/header.tsx`)
+   - **Testing**: Test case generation and edge case suggestions
+   - **Configuration**: Next.js webpack configuration for Web3 dependencies
+
+### Human-Written Code
+
+- All smart contracts logic and architecture (`packages/hardhat/contracts/*`)
+- Smart contract deployment scripts (`packages/hardhat/deploy/*`)
+- Test suite design and assertions (`packages/hardhat/test/*`)
+- Project architecture and ENS royalty system design
+- Integration logic between smart contracts and frontend
+
+**Note**: All AI-generated code was reviewed, tested, and modified by the development team to ensure quality, security, and alignment with project requirements.
+
 ---
 
 **Built with ❤️ for ETHGlobal Hackathon**
