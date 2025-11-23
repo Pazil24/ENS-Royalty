@@ -98,8 +98,6 @@ paymentSplitter.release(payable(alice));
 
 ## 🎮 Quick Start
 
-## 🎮 Quick Start
-
 ### Prerequisites
 
 - [Node (>= v20.18.3)](https://nodejs.org/en/download/)

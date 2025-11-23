@@ -4,15 +4,26 @@ import Image from "next/image"
 import { Button } from "@/components/ui/button"
 import { useAppKit } from '@reown/appkit/react'
 import { useAccount, useEnsName, useDisconnect } from 'wagmi'
-import { mainnet } from 'viem/chains'
+import { mainnet, sepolia } from 'viem/chains'
 
 export function AppHeader() {
   const { open } = useAppKit()
-  const { address, isConnected } = useAccount()
+  const { address, isConnected, chain } = useAccount()
   const { disconnect } = useDisconnect()
-  const { data: ensName } = useEnsName({
+  
+  // Try to get ENS name from Mainnet first
+  const { data: mainnetEnsName } = useEnsName({
     address,
     chainId: mainnet.id,
+  })
+  
+  // Try to get ENS name from Sepolia if on Sepolia
+  const { data: sepoliaEnsName } = useEnsName({
+    address,
+    chainId: sepolia.id,
+    query: {
+      enabled: chain?.id === sepolia.id && !mainnetEnsName,
+    }
   })
 
   const formatAddress = (addr: string) => {
@@ -20,7 +31,8 @@ export function AppHeader() {
     return `${addr.slice(0, 6)}...${addr.slice(-4)}`
   }
 
-  const displayName = ensName || (address ? formatAddress(address) : null)
+  // Priority: Mainnet ENS > Sepolia ENS > Formatted Address
+  const displayName = mainnetEnsName || sepoliaEnsName || (address ? formatAddress(address) : null)
 
   return (
     <header className="glass-border-subtle border-b">
@@ -31,7 +43,9 @@ export function AppHeader() {
           </div>
           <div>
             <h1 className="text-2xl font-bold">ENS Royalty System</h1>
-            <p className="text-sm text-muted-foreground">Sepolia Testnet</p>
+            <p className="text-sm text-muted-foreground">
+              {chain?.name || "Sepolia Testnet"}
+            </p>
           </div>
         </div>
         <div className="flex items-center gap-2">
