@@ -10,6 +10,7 @@ import { toast } from "sonner"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { normalize } from "viem/ens"
 import { sepolia } from "viem/chains"
+import { useSubdomains } from "@/lib/context/SubdomainContext"
 
 interface Beneficiary {
   input: string // Can be ENS name or address
@@ -19,9 +20,14 @@ interface Beneficiary {
   isResolved: boolean
 }
 
-export function CreateSubdomain() {
+interface CreateSubdomainProps {
+  onSuccess?: () => void
+}
+
+export function CreateSubdomain({ onSuccess }: CreateSubdomainProps = {}) {
   const { address, isConnected } = useAccount()
   const { createSubdomain, createLockedSubdomain, isPending } = useSubdomainFactory()
+  const { addSubdomain } = useSubdomains()
 
   const [step, setStep] = useState(1)
   const [formData, setFormData] = useState({
@@ -226,6 +232,33 @@ export function CreateSubdomain() {
           description: `TX: ${hash?.slice(0, 10)}...`,
         },
       )
+
+      // Add subdomain to context for real-time dashboard update
+      const newSubdomain = {
+        name: formData.subdomainLabel,
+        fullName: `${formData.subdomainLabel}.${formData.parentDomain}`,
+        parentDomain: formData.parentDomain,
+        owner: formData.ownerAddress,
+        isLocked: formData.isLocked,
+        beneficiaries: formData.beneficiaries.map((b, idx) => ({
+          address: b.resolvedAddress!,
+          share: beneficiaryShares[idx].toString(),
+          percentage: parseFloat(b.sharePercent || "0")
+        })),
+        parentRoyalty: parseInt(formData.royaltyPercent),
+        availableBalance: "0",
+        transactionHash: hash,
+        createdAt: new Date()
+      }
+      
+      addSubdomain(newSubdomain)
+      
+      // Call onSuccess callback to switch to dashboard
+      if (onSuccess) {
+        setTimeout(() => {
+          onSuccess()
+        }, 1500) // Wait 1.5s to show success toast
+      }
 
       // Reset form
       setFormData({

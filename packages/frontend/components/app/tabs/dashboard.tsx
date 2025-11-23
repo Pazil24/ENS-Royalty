@@ -1,12 +1,15 @@
 "use client"
 
 import { Card } from "@/components/ui/card"
-import { TrendingUp, Users, Lock, Unlock, ExternalLink } from "lucide-react"
-import { useAccount, useEnsName } from "wagmi"
+import { TrendingUp, Users, Lock, Unlock, ExternalLink, Globe, ChevronDown, ChevronUp } from "lucide-react"
+import { useAccount, useEnsName, useReadContracts } from "wagmi"
 import { useState, useEffect } from "react"
-import { formatEther } from "viem"
+import { formatEther, namehash } from "viem"
 import { sepolia } from "viem/chains"
 import { Button } from "@/components/ui/button"
+import { CONTRACTS } from "@/lib/config/contracts"
+import SubdomainFactoryABI from "@/lib/abis/SubdomainFactory.json"
+import { useSubdomains } from "@/lib/context/SubdomainContext"
 
 interface Subdomain {
   name: string
@@ -20,6 +23,14 @@ interface Subdomain {
   }>
   parentRoyalty: number
   availableBalance: string
+  parentDomain: string
+}
+
+interface ENSDomain {
+  name: string
+  subdomains: Subdomain[]
+  totalSubdomains: number
+  isExpanded: boolean
 }
 
 export function Dashboard() {
@@ -29,58 +40,65 @@ export function Dashboard() {
     chainId: sepolia.id 
   })
   
-  const [subdomains, setSubdomains] = useState<Subdomain[]>([])
-  const [isLoading, setIsLoading] = useState(true)
+  const { subdomains: contextSubdomains } = useSubdomains()
+  const [ensDomains, setEnsDomains] = useState<ENSDomain[]>([])
+  const [isLoading, setIsLoading] = useState(false)
   
-  // Mock data for demonstration - In production, fetch from contract events
+  // Update ENS domains when context subdomains change
   useEffect(() => {
     if (!isConnected) {
       setIsLoading(false)
       return
     }
     
-    // Simulate loading subdomains from contract
-    setTimeout(() => {
-      // This would be replaced with actual contract calls
-      setSubdomains([
-        {
-          name: "shop",
-          fullName: "shop.mybrand.eth",
-          owner: address || "",
-          isLocked: true,
-          beneficiaries: [
-            { address: "0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb", share: "5000", percentage: 50 },
-            { address: "0x8626f6940E2eb28930eFb4CeF49B2d1F2C9C1199", share: "3000", percentage: 30 },
-            { address: "0xdD2FD4581271e230360230F9337D5c0430Bf44C0", share: "2000", percentage: 20 },
-          ],
-          parentRoyalty: 10,
-          availableBalance: "0.5"
-        },
-      ])
-      setIsLoading(false)
-    }, 1000)
-  }, [isConnected, address])
+    setIsLoading(true)
+    
+    // Group subdomains by parent domain
+    const domainMap = new Map<string, Subdomain[]>()
+    contextSubdomains.forEach(sub => {
+      if (!domainMap.has(sub.parentDomain)) {
+        domainMap.set(sub.parentDomain, [])
+      }
+      domainMap.get(sub.parentDomain)!.push(sub as Subdomain)
+    })
+    
+    const domains: ENSDomain[] = Array.from(domainMap.entries()).map(([domainName, subs]) => ({
+      name: domainName,
+      subdomains: subs,
+      totalSubdomains: subs.length,
+      isExpanded: true // Auto-expand to show new subdomains
+    }))
+    
+    setEnsDomains(domains)
+    setIsLoading(false)
+  }, [isConnected, contextSubdomains])
   
-  const totalSubdomains = subdomains.length
-  const totalPendingWithdrawals = subdomains.reduce((sum, sub) => 
+  const toggleDomain = (domainName: string) => {
+    setEnsDomains(prev => prev.map(d => 
+      d.name === domainName ? { ...d, isExpanded: !d.isExpanded } : d
+    ))
+  }
+  
+  const totalSubdomains = contextSubdomains.length
+  const totalPendingWithdrawals = contextSubdomains.reduce((sum, sub) => 
     sum + parseFloat(sub.availableBalance), 0
   )
-  const totalBeneficiaries = subdomains.reduce((sum, sub) => 
+  const totalBeneficiaries = contextSubdomains.reduce((sum, sub) => 
     sum + sub.beneficiaries.length, 0
   )
   
   const stats = [
     {
       title: "My ENS Domains",
-      value: ensName || "Not registered",
+      value: ensDomains.length > 0 ? ensDomains.length.toString() : (ensName ? "1" : "0"),
       badge: isConnected ? "Connected" : "Disconnected",
-      trend: address ? `${address.slice(0, 6)}...${address.slice(-4)}` : "Connect wallet",
+      trend: ensName || (address ? `${address.slice(0, 6)}...${address.slice(-4)}` : "Connect wallet"),
     },
     {
-      title: "Total Subdomains Created",
+      title: "Total Subdomains Delegated",
       value: totalSubdomains.toString(),
       badge: "Active",
-      trend: `${subdomains.filter(s => s.isLocked).length} locked`,
+      trend: `${contextSubdomains.filter(s => s.isLocked).length} locked`,
     },
     {
       title: "Pending Withdrawals",
@@ -91,7 +109,7 @@ export function Dashboard() {
     {
       title: "Total Beneficiaries",
       value: totalBeneficiaries.toString(),
-      trend: `Across ${totalSubdomains} subdomains`,
+      trend: `Across ${ensDomains.length} domains`,
     },
   ]
 
@@ -99,18 +117,22 @@ export function Dashboard() {
     <div className="space-y-8">
       <div>
         <h1 className="text-3xl font-bold mb-2">Dashboard</h1>
-        <p className="text-muted-foreground">Overview of your ENS royalty streams</p>
+        <p className="text-muted-foreground">Overview of your ENS domains and delegated subdomains on Sepolia testnet</p>
       </div>
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        {stats.map((stat, idx) => (
+            {stats.map((stat, idx) => (
           <Card key={idx} className="glass-border p-6">
             <div className="flex items-start justify-between mb-4">
               <div>
                 <p className="text-sm text-muted-foreground">{stat.title}</p>
                 {stat.badge && (
-                  <span className="inline-block mt-2 px-2 py-1 rounded-full bg-accent/20 border border-accent/50 text-xs text-accent">
+                  <span className={`inline-block mt-2 px-2 py-1 rounded-full text-xs ${
+                    isConnected 
+                      ? "bg-accent/20 border border-accent/50 text-accent"
+                      : "bg-muted border border-border text-muted-foreground"
+                  }`}>
                     {stat.badge}
                   </span>
                 )}
@@ -118,17 +140,132 @@ export function Dashboard() {
               <TrendingUp className="w-4 h-4 text-accent" />
             </div>
             <div className="flex items-baseline gap-1">
-              <span className="text-2xl font-bold">{stat.value}</span>
+              <span className="text-2xl font-bold truncate">{stat.value}</span>
               {stat.unit && <span className="text-sm text-muted-foreground">{stat.unit}</span>}
             </div>
-            <p className="text-xs text-muted-foreground mt-3">{stat.trend}</p>
+            <p className="text-xs text-muted-foreground mt-3 truncate">{stat.trend}</p>
           </Card>
         ))}
       </div>
 
-      {/* My Subdomains with Beneficiaries */}
+      {/* My ENS Domains with Subdomains */}
       <div>
-        <h2 className="text-xl font-bold mb-4">My ENS Subdomains & Beneficiaries</h2>
+        <h2 className="text-xl font-bold mb-4">My ENS Domains & Delegated Subdomains</h2>
+        
+        {!isConnected ? (
+          <Card className="glass-border p-8 text-center">
+            <p className="text-muted-foreground">Connect your wallet to view your ENS domains</p>
+          </Card>
+        ) : isLoading ? (
+          <Card className="glass-border p-8 text-center">
+            <p className="text-muted-foreground">Loading your ENS domains...</p>
+          </Card>
+        ) : ensDomains.length === 0 ? (
+          <Card className="glass-border p-8 text-center">
+            <p className="text-muted-foreground mb-2">No ENS domains with subdomains found</p>
+            <p className="text-sm text-muted-foreground">Create a subdomain to get started</p>
+          </Card>
+        ) : (
+          <div className="space-y-4">
+            {ensDomains.map((domain, idx) => (
+              <Card key={idx} className="glass-border overflow-hidden">
+                {/* Domain Header */}
+                <div 
+                  className="p-6 cursor-pointer hover:bg-primary/5 transition flex items-center justify-between"
+                  onClick={() => toggleDomain(domain.name)}
+                >
+                  <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 rounded-full bg-gradient-to-r from-primary to-accent flex items-center justify-center">
+                      <Globe className="w-6 h-6 text-white" />
+                    </div>
+                    <div>
+                      <h3 className="text-xl font-bold font-mono">{domain.name}</h3>
+                      <p className="text-sm text-muted-foreground">
+                        {domain.totalSubdomains} subdomain{domain.totalSubdomains !== 1 ? 's' : ''} delegated
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <span className="px-3 py-1 rounded-full bg-accent/20 border border-accent/50 text-accent text-sm font-medium">
+                      {domain.totalSubdomains} active
+                    </span>
+                    {domain.isExpanded ? (
+                      <ChevronUp className="w-5 h-5 text-muted-foreground" />
+                    ) : (
+                      <ChevronDown className="w-5 h-5 text-muted-foreground" />
+                    )}
+                  </div>
+                </div>
+                
+                {/* Expanded Subdomains List */}
+                {domain.isExpanded && (
+                  <div className="border-t border-border bg-muted/20">
+                    <div className="p-6 space-y-4">
+                      <h4 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
+                        Delegated Subdomains
+                      </h4>
+                      {domain.subdomains.map((subdomain, subIdx) => (
+                        <Card key={subIdx} className="bg-background border-border/50 p-4">
+                          <div className="flex items-start justify-between mb-3">
+                            <div>
+                              <h5 className="text-base font-bold font-mono">{subdomain.fullName}</h5>
+                              <p className="text-xs text-muted-foreground mt-1">
+                                Owner: {subdomain.owner.slice(0, 8)}...{subdomain.owner.slice(-6)}
+                              </p>
+                            </div>
+                            {subdomain.isLocked ? (
+                              <span className="flex items-center gap-1 px-2 py-1 rounded-full bg-destructive/10 text-destructive text-xs border border-destructive/30">
+                                <Lock className="w-3 h-3" /> Locked
+                              </span>
+                            ) : (
+                              <span className="flex items-center gap-1 px-2 py-1 rounded-full bg-accent/10 text-accent text-xs border border-accent/30">
+                                <Unlock className="w-3 h-3" /> Unlocked
+                              </span>
+                            )}
+                          </div>
+                          
+                          <div className="grid grid-cols-3 gap-3 mb-3">
+                            <div className="bg-primary/5 border border-primary/20 rounded p-2">
+                              <p className="text-xs text-muted-foreground">Parent Royalty</p>
+                              <p className="text-sm font-bold">{subdomain.parentRoyalty}%</p>
+                            </div>
+                            <div className="bg-accent/5 border border-accent/20 rounded p-2">
+                              <p className="text-xs text-muted-foreground">Beneficiaries</p>
+                              <p className="text-sm font-bold">{subdomain.beneficiaries.length}</p>
+                            </div>
+                            <div className="bg-green-500/5 border border-green-500/20 rounded p-2">
+                              <p className="text-xs text-muted-foreground">Balance</p>
+                              <p className="text-sm font-bold">{subdomain.availableBalance} ETH</p>
+                            </div>
+                          </div>
+                          
+                          <div className="border-t border-border pt-3">
+                            <p className="text-xs font-semibold text-muted-foreground mb-2">BENEFICIARIES:</p>
+                            <div className="space-y-2">
+                              {subdomain.beneficiaries.map((beneficiary, bIdx) => (
+                                <div key={bIdx} className="flex items-center justify-between text-xs">
+                                  <span className="font-mono text-muted-foreground">
+                                    {beneficiary.address.slice(0, 8)}...{beneficiary.address.slice(-6)}
+                                  </span>
+                                  <span className="font-bold">{beneficiary.percentage}%</span>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        </Card>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </Card>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Detailed Subdomain View (Legacy - kept for compatibility) */}
+      <div>
+        <h2 className="text-xl font-bold mb-4">All Subdomains Details</h2>
         
         {!isConnected ? (
           <Card className="glass-border p-8 text-center">
@@ -138,14 +275,14 @@ export function Dashboard() {
           <Card className="glass-border p-8 text-center">
             <p className="text-muted-foreground">Loading your subdomains...</p>
           </Card>
-        ) : subdomains.length === 0 ? (
+        ) : contextSubdomains.length === 0 ? (
           <Card className="glass-border p-8 text-center">
             <p className="text-muted-foreground mb-2">You haven't created any subdomains yet</p>
             <p className="text-sm text-muted-foreground">Go to "Create Subdomain" to get started</p>
           </Card>
         ) : (
           <div className="space-y-4">
-            {subdomains.map((subdomain, idx) => (
+            {contextSubdomains.map((subdomain, idx) => (
               <Card key={idx} className="glass-border p-6 hover:border-primary/50 transition">
                 <div className="flex items-start justify-between mb-4">
                   <div className="flex items-center gap-3">
@@ -259,33 +396,25 @@ export function Dashboard() {
                 </tr>
               </thead>
               <tbody>
-                <tr className="border-b border-border/50 hover:bg-primary/5 transition">
-                  <td className="py-3 px-4">Nov 23, 2024</td>
-                  <td className="py-3 px-4">Payment Received</td>
-                  <td className="py-3 px-4 font-mono text-xs">shop.mybrand.eth</td>
-                  <td className="py-3 px-4">0.5 ETH</td>
-                  <td className="py-3 px-4">
-                    <span className="px-2 py-1 rounded-full bg-accent/20 text-accent text-xs">Confirmed</span>
-                  </td>
-                </tr>
-                <tr className="border-b border-border/50 hover:bg-primary/5 transition">
-                  <td className="py-3 px-4">Nov 20, 2024</td>
-                  <td className="py-3 px-4">Subdomain Created</td>
-                  <td className="py-3 px-4 font-mono text-xs">shop.mybrand.eth</td>
-                  <td className="py-3 px-4">-</td>
-                  <td className="py-3 px-4">
-                    <span className="px-2 py-1 rounded-full bg-accent/20 text-accent text-xs">Confirmed</span>
-                  </td>
-                </tr>
-                <tr className="hover:bg-primary/5 transition">
-                  <td className="py-3 px-4">Nov 18, 2024</td>
-                  <td className="py-3 px-4">ETH Withdrawn</td>
-                  <td className="py-3 px-4 font-mono text-xs">premium.brand.eth</td>
-                  <td className="py-3 px-4">0.8 ETH</td>
-                  <td className="py-3 px-4">
-                    <span className="px-2 py-1 rounded-full bg-accent/20 text-accent text-xs">Confirmed</span>
-                  </td>
-                </tr>
+                {contextSubdomains.length > 0 ? (
+                  contextSubdomains.slice(0, 3).map((sub, idx) => (
+                    <tr key={idx} className={idx < 2 ? "border-b border-border/50 hover:bg-primary/5 transition" : "hover:bg-primary/5 transition"}>
+                      <td className="py-3 px-4">{new Date(sub.createdAt || Date.now()).toLocaleDateString()}</td>
+                      <td className="py-3 px-4">Subdomain Created</td>
+                      <td className="py-3 px-4 font-mono text-xs">{sub.fullName}</td>
+                      <td className="py-3 px-4">-</td>
+                      <td className="py-3 px-4">
+                        <span className="px-2 py-1 rounded-full bg-accent/20 text-accent text-xs">Confirmed</span>
+                      </td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan={5} className="py-8 text-center text-muted-foreground">
+                      No activity yet - create your first subdomain!
+                    </td>
+                  </tr>
+                )}
               </tbody>
             </table>
           </div>

@@ -6,6 +6,7 @@ import { Dashboard } from "@/components/app/tabs/dashboard"
 import { CreateSubdomain } from "@/components/app/tabs/create-subdomain"
 import { MySubdomains } from "@/components/app/tabs/my-subdomains"
 import { PaymentsWithdrawals } from "@/components/app/tabs/payments-withdrawals"
+import { SubdomainProvider } from "@/lib/context/SubdomainContext"
 
 type TabType = "dashboard" | "create" | "my-subdomains" | "payments" | "settings"
 
@@ -17,7 +18,7 @@ export default function AppPage() {
       case "dashboard":
         return <Dashboard />
       case "create":
-        return <CreateSubdomain />
+        return <CreateSubdomain onSuccess={() => setActiveTab("dashboard")} />
       case "my-subdomains":
         return <MySubdomains />
       case "payments":
@@ -30,8 +31,10 @@ export default function AppPage() {
   }
 
   return (
-    <AppLayout activeTab={activeTab} setActiveTab={setActiveTab}>
-      {renderTab()}
-    </AppLayout>
+    <SubdomainProvider>
+      <AppLayout activeTab={activeTab} setActiveTab={setActiveTab}>
+        {renderTab()}
+      </AppLayout>
+    </SubdomainProvider>
   )
 }
