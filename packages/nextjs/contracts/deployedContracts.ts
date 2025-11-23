@@ -3176,7 +3176,7 @@ const deployedContracts = {
       deployedOnBlock: 9687823,
     },
     RoyaltyPaymentSplitter: {
-      address: "0x0191ef763e9c8a031Fc21E06a7449C9768a74921",
+      address: "0x36868e731B54E9a6DeedD990072B5ec166e0689a",
       abi: [
         {
           inputs: [
@@ -3188,31 +3188,6 @@ const deployedContracts = {
           ],
           stateMutability: "nonpayable",
           type: "constructor",
-        },
-        {
-          anonymous: false,
-          inputs: [
-            {
-              indexed: true,
-              internalType: "bytes32",
-              name: "node",
-              type: "bytes32",
-            },
-            {
-              indexed: false,
-              internalType: "address",
-              name: "recipient",
-              type: "address",
-            },
-            {
-              indexed: false,
-              internalType: "uint256",
-              name: "amount",
-              type: "uint256",
-            },
-          ],
-          name: "FallbackPayment",
-          type: "event",
         },
         {
           anonymous: false,
@@ -3458,30 +3433,6 @@ const deployedContracts = {
               name: "node",
               type: "bytes32",
             },
-            {
-              internalType: "address",
-              name: "account",
-              type: "address",
-            },
-          ],
-          name: "getPendingBalance",
-          outputs: [
-            {
-              internalType: "uint256",
-              name: "",
-              type: "uint256",
-            },
-          ],
-          stateMutability: "view",
-          type: "function",
-        },
-        {
-          inputs: [
-            {
-              internalType: "bytes32",
-              name: "node",
-              type: "bytes32",
-            },
           ],
           name: "getSplitConfiguration",
           outputs: [
@@ -3540,48 +3491,6 @@ const deployedContracts = {
             },
           ],
           stateMutability: "view",
-          type: "function",
-        },
-        {
-          inputs: [
-            {
-              internalType: "bytes32",
-              name: "",
-              type: "bytes32",
-            },
-            {
-              internalType: "address",
-              name: "",
-              type: "address",
-            },
-          ],
-          name: "pending",
-          outputs: [
-            {
-              internalType: "uint256",
-              name: "",
-              type: "uint256",
-            },
-          ],
-          stateMutability: "view",
-          type: "function",
-        },
-        {
-          inputs: [
-            {
-              internalType: "bytes32",
-              name: "node",
-              type: "bytes32",
-            },
-            {
-              internalType: "address payable",
-              name: "account",
-              type: "address",
-            },
-          ],
-          name: "release",
-          outputs: [],
-          stateMutability: "nonpayable",
           type: "function",
         },
         {
@@ -3669,10 +3578,10 @@ const deployedContracts = {
         },
       ],
       inheritedFunctions: {},
-      deployedOnBlock: 9691143,
+      deployedOnBlock: 9691292,
     },
     SubdomainFactory: {
-      address: "0xd9A6f65f9c00f483e06DDa300bC2c9acccDA10e8",
+      address: "0x841F6E6AD2B435d2d724AD3F280Ac90Ae02c12a4",
       abi: [
         {
           inputs: [
@@ -3843,7 +3752,7 @@ const deployedContracts = {
         },
       ],
       inheritedFunctions: {},
-      deployedOnBlock: 9691185,
+      deployedOnBlock: 9691308,
     },
     YourContract: {
       address: "0xb611D5D6Fb220BF0fE7B2b9Bc7Eed2B12f79F166",

@@ -13,7 +13,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { CONTRACTS } from "@/lib/config/contracts"
 import SubdomainFactoryABI from "@/lib/abis/SubdomainFactory.json"
 import { useSubdomains } from "@/lib/context/SubdomainContext"
-import { usePaymentSplitter, usePendingBalance, useBeneficiariesConfig } from "@/hooks/use-ens-royalty"
+import { usePaymentSplitter, useBeneficiariesConfig } from "@/hooks/use-ens-royalty"
 import { toast } from "sonner"
 
 interface Subdomain {
@@ -52,11 +52,7 @@ export function Dashboard() {
   const [paymentAmount, setPaymentAmount] = useState("")
   const [showPaymentDialog, setShowPaymentDialog] = useState(false)
   
-  const { sendRevenue, claimBalance, isPending } = usePaymentSplitter()
-  const pendingBalance = usePendingBalance(
-    selectedSubdomain || undefined,
-    address
-  )
+  const { sendRevenue, isPending } = usePaymentSplitter()
   
   const handleSendPayment = async () => {
     if (!selectedSubdomain || !paymentAmount) {
@@ -89,23 +85,6 @@ export function Dashboard() {
     } catch (error: any) {
       console.error("❌ Payment error:", error)
       toast.error(error?.message || "Failed to send payment")
-    }
-  }
-
-  const handleClaimBalance = async (domain: string) => {
-    if (!address) {
-      toast.error("Please connect your wallet")
-      return
-    }
-
-    try {
-      const hash = await claimBalance(domain, address)
-      toast.success("Balance claimed successfully!")
-      toast.info(`Transaction: ${hash.slice(0, 10)}...${hash.slice(-8)}`)
-      pendingBalance.refetch()
-    } catch (error: any) {
-      console.error("Claim error:", error)
-      toast.error(error?.message || "Failed to claim balance")
     }
   }
   
@@ -330,17 +309,6 @@ export function Dashboard() {
                               <Send className="w-4 h-4 mr-2" />
                               Send Payment
                             </Button>
-                            {parseFloat(subdomain.availableBalance) > 0 && (
-                              <Button 
-                                size="sm"
-                                variant="outline"
-                                onClick={() => handleClaimBalance(subdomain.fullName)}
-                                disabled={isPending}
-                              >
-                                <Wallet className="w-4 h-4 mr-2" />
-                                Claim
-                              </Button>
-                            )}
                           </div>
                         </Card>
                       ))}
@@ -571,16 +539,9 @@ export function Dashboard() {
                 onChange={(e) => setPaymentAmount(e.target.value)}
               />
               <p className="text-xs text-muted-foreground mt-1">
-                Minimum: 0.001 ETH
+                Minimum: 0.001 ETH | Payment will be automatically distributed to all beneficiaries
               </p>
             </div>
-            
-            {pendingBalance.balance && parseFloat(pendingBalance.balance) > 0 && (
-              <div className="bg-accent/10 border border-accent/30 rounded-lg p-3">
-                <p className="text-xs text-muted-foreground mb-1">Your Pending Balance</p>
-                <p className="text-lg font-bold text-accent">{pendingBalance.balance} ETH</p>
-              </div>
-            )}
           </div>
           
           <DialogFooter>

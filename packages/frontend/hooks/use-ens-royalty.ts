@@ -107,54 +107,15 @@ export function usePaymentSplitter() {
     return hash;
   };
 
-
-
-  const claimBalance = async (domain: string, beneficiary: string) => {
-    const node = namehash(domain);
-    
-    const hash = await writeContractAsync({
-      address: CONTRACTS.RoyaltyPaymentSplitter.address,
-      abi: RoyaltyPaymentSplitterABI,
-      functionName: 'release',
-      args: [node, beneficiary],
-    });
-    
-    return hash;
-  };
-
   return {
     sendRevenue,
-    claimBalance,
     isPending: isPending || isConfirming,
     isSuccess,
     hash,
   };
 }
 
-// Hook for reading pending balance for a beneficiary
-export function usePendingBalance(domain: string | undefined, beneficiary: string | undefined) {
-  const node = domain ? namehash(domain) : undefined;
-  
-  const { data, isError, isLoading, refetch } = useReadContract({
-    address: CONTRACTS.RoyaltyPaymentSplitter.address,
-    abi: RoyaltyPaymentSplitterABI,
-    functionName: 'pending',
-    args: node && beneficiary ? [node, beneficiary] : undefined,
-    query: {
-      enabled: !!node && !!beneficiary,
-    },
-  });
-
-  return {
-    balance: data ? formatEther(data as bigint) : '0',
-    balanceRaw: data as bigint | undefined,
-    isError,
-    isLoading,
-    refetch,
-  };
-}
-
-// Hook for reading beneficiaries configuration
+// Hook for reading beneficiaries configuration (no longer tracks pending balances)
 export function useBeneficiariesConfig(domain: string | undefined) {
   const node = domain ? namehash(domain) : undefined;
   
