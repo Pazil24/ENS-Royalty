@@ -4,6 +4,8 @@ import type { Metadata } from "next"
 import { Inter } from "next/font/google"
 import { SpeedInsights } from "@vercel/speed-insights/next"
 import { Analytics } from "@vercel/analytics/react"
+import { headers } from 'next/headers'
+import AppKitProvider from '@/lib/context/appkit-provider'
 
 const inter = Inter({ subsets: ["latin"], display: "swap" })
 
@@ -13,21 +15,26 @@ export const metadata: Metadata = {
   generator: "v0.app",
 }
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
+  const headersObj = await headers()
+  const cookies = headersObj.get('cookie')
+
   return (
     <html lang="en" className={inter.className}>
       <body>
-        <div className="relative min-h-screen bg-background text-foreground selection:bg-primary/30 selection:text-foreground">
-          {children}
-        </div>
+        <AppKitProvider cookies={cookies}>
+          <div className="relative min-h-screen bg-background text-foreground selection:bg-primary/30 selection:text-foreground">
+            {children}
+          </div>
 
-        {/* Vercel Speed Insights and Analytics components */}
-        <SpeedInsights />
-        <Analytics />
+          {/* Vercel Speed Insights and Analytics components */}
+          <SpeedInsights />
+          <Analytics />
+        </AppKitProvider>
       </body>
     </html>
   )
