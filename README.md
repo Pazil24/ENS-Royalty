@@ -6,6 +6,7 @@
   <a href="#-use-cases">Use Cases</a>
 </h4>
 
+<h2><a href="https://youtu.be/iNZ9DZNq680?si=GvshV8lJ8OqmGYlc ">Demo Video</a></h2>
 🚀 **Turn Your ENS Name Into a Revenue Stream**
 
 Create and sell ENS subdomains with **immutable royalty splits** that automatically distribute payments. Perfect for influencers, brands, and DAOs who want to monetize their web3 identity while maintaining control through cryptographic fuse locking.
