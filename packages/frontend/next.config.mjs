@@ -9,6 +9,10 @@ const nextConfig = {
   images: {
     unoptimized: true,
   },
+  // Add these to prevent chunk issues
+  experimental: {
+    esmExternals: 'loose',
+  },
   webpack: (config) => {
     config.externals.push(
       "pino-pretty", 
@@ -23,6 +27,10 @@ const nextConfig = {
       tls: false,
       crypto: false,
     };
+    // Add this to prevent chunk path issues
+    if (!config.isServer) {
+      config.output.chunkFilename = 'static/chunks/[name].js';
+    }
     return config;
   },
 }

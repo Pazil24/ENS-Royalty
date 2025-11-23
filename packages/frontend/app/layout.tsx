@@ -6,6 +6,7 @@ import { SpeedInsights } from "@vercel/speed-insights/next"
 import { Analytics } from "@vercel/analytics/react"
 import { headers } from 'next/headers'
 import AppKitProvider from '@/lib/context/appkit-provider'
+import { Toaster } from 'sonner'
 
 const inter = Inter({ subsets: ["latin"], display: "swap" })
 
@@ -30,6 +31,8 @@ export default async function RootLayout({
           <div className="relative min-h-screen bg-background text-foreground selection:bg-primary/30 selection:text-foreground">
             {children}
           </div>
+
+          <Toaster position="bottom-right" richColors />
 
           {/* Vercel Speed Insights and Analytics components */}
           <SpeedInsights />
