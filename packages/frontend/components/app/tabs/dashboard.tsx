@@ -13,7 +13,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { CONTRACTS } from "@/lib/config/contracts"
 import SubdomainFactoryABI from "@/lib/abis/SubdomainFactory.json"
 import { useSubdomains } from "@/lib/context/SubdomainContext"
-import { usePaymentSplitter, usePendingBalance } from "@/hooks/use-ens-royalty"
+import { usePaymentSplitter, usePendingBalance, useBeneficiariesConfig } from "@/hooks/use-ens-royalty"
 import { toast } from "sonner"
 
 interface Subdomain {
@@ -65,14 +65,29 @@ export function Dashboard() {
     }
 
     try {
+      console.log("🔵 Sending payment to subdomain:", selectedSubdomain)
+      console.log("🔵 Amount:", paymentAmount, "ETH")
+      console.log("🔵 Namehash will be:", namehash(selectedSubdomain))
+      
       const hash = await sendRevenue(selectedSubdomain, paymentAmount)
+      
+      console.log("✅ Payment transaction hash:", hash)
       toast.success("Payment sent successfully!")
-      toast.info(`Transaction: ${hash.slice(0, 10)}...${hash.slice(-8)}`)
+      toast.info(
+        <a 
+          href={`https://sepolia.etherscan.io/tx/${hash}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="underline"
+        >
+          View on Etherscan: {hash.slice(0, 10)}...{hash.slice(-8)}
+        </a>
+      )
       setShowPaymentDialog(false)
       setPaymentAmount("")
       setSelectedSubdomain(null)
     } catch (error: any) {
-      console.error("Payment error:", error)
+      console.error("❌ Payment error:", error)
       toast.error(error?.message || "Failed to send payment")
     }
   }

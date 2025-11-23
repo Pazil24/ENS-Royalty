@@ -154,6 +154,39 @@ export function usePendingBalance(domain: string | undefined, beneficiary: strin
   };
 }
 
+// Hook for reading beneficiaries configuration
+export function useBeneficiariesConfig(domain: string | undefined) {
+  const node = domain ? namehash(domain) : undefined;
+  
+  // We need to call the contract multiple times to get all beneficiaries
+  // This is a simplified version - you might need to implement a better approach
+  const { data: beneficiary0 } = useReadContract({
+    address: CONTRACTS.RoyaltyPaymentSplitter.address,
+    abi: RoyaltyPaymentSplitterABI,
+    functionName: 'beneficiaries',
+    args: node ? [node, BigInt(0)] : undefined,
+    query: {
+      enabled: !!node,
+    },
+  });
+
+  const { data: share0 } = useReadContract({
+    address: CONTRACTS.RoyaltyPaymentSplitter.address,
+    abi: RoyaltyPaymentSplitterABI,
+    functionName: 'shares',
+    args: node ? [node, BigInt(0)] : undefined,
+    query: {
+      enabled: !!node,
+    },
+  });
+
+  return {
+    beneficiary: beneficiary0 as string | undefined,
+    share: share0 as bigint | undefined,
+    node,
+  };
+}
+
 
 
 // Hook for reading royalty token balance (ERC1155)

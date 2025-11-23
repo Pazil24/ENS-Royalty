@@ -199,6 +199,15 @@ export function CreateSubdomain({ onSuccess }: CreateSubdomainProps = {}) {
 
       const toastId = toast.loading("Creating subdomain...")
 
+      console.log("🔵 Creating subdomain:")
+      console.log("  - Label:", formData.subdomainLabel)
+      console.log("  - Parent domain:", formData.parentDomain)
+      console.log("  - Full name:", `${formData.subdomainLabel}.${formData.parentDomain}`)
+      console.log("  - Owner:", formData.ownerAddress)
+      console.log("  - Beneficiaries:", beneficiaryAddresses)
+      console.log("  - Shares (BPS):", beneficiaryShares)
+      console.log("  - Total BPS:", beneficiaryShares.reduce((sum, s) => sum + s, 0))
+
       let hash
       try {
         if (formData.isLocked) {
