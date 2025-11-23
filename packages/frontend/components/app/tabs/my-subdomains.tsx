@@ -5,7 +5,7 @@ import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Search, Filter, Lock, ExternalLink } from "lucide-react"
 import { useAccount } from "wagmi"
-import { useRoyaltyConfig, useAvailableBalance, usePaymentSplitter } from "@/hooks/use-ens-royalty"
+import { useRoyaltyConfig, usePendingBalance, usePaymentSplitter } from "@/hooks/use-ens-royalty"
 import { toast } from "sonner"
 import { formatEther } from "viem"
 
@@ -77,13 +77,18 @@ export function MySubdomains() {
 function SubdomainCard({ domain }: { domain: { name: string; namehash: string } }) {
   const { address } = useAccount()
   const royaltyConfig = useRoyaltyConfig(domain.namehash)
-  const availableBalance = useAvailableBalance(domain.namehash, address!)
+  const pendingBalance = usePendingBalance(domain.namehash, address!)
   const { claimBalance, isPending } = usePaymentSplitter()
 
   const handleClaim = async () => {
+    if (!address) {
+      toast.error("Please connect your wallet")
+      return
+    }
+    
     try {
       toast.loading("Claiming balance...")
-      const hash = await claimBalance(domain.namehash)
+      const hash = await claimBalance(domain.namehash, address)
       toast.success("Balance claimed!", {
         description: `TX: ${hash?.slice(0, 10)}...`,
       })
@@ -95,7 +100,7 @@ function SubdomainCard({ domain }: { domain: { name: string; namehash: string } 
     }
   }
 
-  const hasBalance = availableBalance.balanceRaw && availableBalance.balanceRaw > BigInt(0)
+  const hasBalance = pendingBalance.balanceRaw && pendingBalance.balanceRaw > BigInt(0)
 
   return (
     <Card className="glass-border p-6 flex flex-col">
@@ -140,7 +145,7 @@ function SubdomainCard({ domain }: { domain: { name: string; namehash: string } 
       <div className="py-4 border-t border-border mb-4">
         <p className="text-xs text-muted-foreground">Available Balance</p>
         <p className="text-lg font-bold text-accent">
-          {availableBalance.balance} ETH
+          {pendingBalance.balance} ETH
         </p>
       </div>
 

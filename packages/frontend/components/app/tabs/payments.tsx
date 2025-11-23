@@ -6,26 +6,24 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { useAccount } from "wagmi"
-import { usePaymentSplitter, useAvailableBalance, useTotalDistributed } from "@/hooks/use-ens-royalty"
+import { usePaymentSplitter, usePendingBalance } from "@/hooks/use-ens-royalty"
 import { toast } from "sonner"
 import { formatEther, parseEther } from "viem"
 import { ArrowDownToLine, Send, TrendingUp } from "lucide-react"
 
 export function Payments() {
   const { address, isConnected } = useAccount()
-  const { sendRevenue, distributeRoyalties, claimBalance, isPending } = usePaymentSplitter()
+  const { sendRevenue, claimBalance, isPending } = usePaymentSplitter()
 
   const [sendForm, setForm] = useState({
     namehash: "",
     amount: "",
   })
 
-  const [distributeNamehash, setDistributeNamehash] = useState("")
   const [claimNamehash, setClaimNamehash] = useState("")
 
-  // Get balances for display (you'd need to pass actual namehashes)
-  const availableBalance = useAvailableBalance(claimNamehash || "0x0", address!)
-  const totalDistributed = useTotalDistributed(claimNamehash || "0x0")
+  // Get pending balance for display
+  const pendingBalance = usePendingBalance(claimNamehash || undefined, address)
 
   const handleSendRevenue = async () => {
     if (!sendForm.namehash || !sendForm.amount) {
@@ -48,36 +46,20 @@ export function Payments() {
     }
   }
 
-  const handleDistribute = async () => {
-    if (!distributeNamehash) {
-      toast.error("Please enter a namehash")
-      return
-    }
-
-    try {
-      toast.loading("Distributing royalties...")
-      const hash = await distributeRoyalties(distributeNamehash)
-      toast.success("Royalties distributed!", {
-        description: `TX: ${hash?.slice(0, 10)}...`,
-      })
-      setDistributeNamehash("")
-    } catch (error: any) {
-      console.error(error)
-      toast.error("Failed to distribute", {
-        description: error.message || "Transaction rejected",
-      })
-    }
-  }
-
   const handleClaim = async () => {
     if (!claimNamehash) {
       toast.error("Please enter a namehash")
       return
     }
+    
+    if (!address) {
+      toast.error("Please connect your wallet")
+      return
+    }
 
     try {
       toast.loading("Claiming balance...")
-      const hash = await claimBalance(claimNamehash)
+      const hash = await claimBalance(claimNamehash, address)
       toast.success("Balance claimed!", {
         description: `TX: ${hash?.slice(0, 10)}...`,
       })
@@ -120,30 +102,8 @@ export function Payments() {
             <p className="text-sm text-muted-foreground">Available Balance</p>
           </div>
           <p className="text-2xl font-bold">
-            {availableBalance.balance} ETH
+            {pendingBalance.balance} ETH
           </p>
-        </Card>
-
-        <Card className="glass-border p-6">
-          <div className="flex items-center gap-3 mb-2">
-            <div className="p-2 rounded-lg bg-accent/20">
-              <TrendingUp className="w-5 h-5 text-accent" />
-            </div>
-            <p className="text-sm text-muted-foreground">Total Distributed</p>
-          </div>
-          <p className="text-2xl font-bold">
-            {totalDistributed.total} ETH
-          </p>
-        </Card>
-
-        <Card className="glass-border p-6">
-          <div className="flex items-center gap-3 mb-2">
-            <div className="p-2 rounded-lg bg-green-500/20">
-              <Send className="w-5 h-5 text-green-500" />
-            </div>
-            <p className="text-sm text-muted-foreground">Active Streams</p>
-          </div>
-          <p className="text-2xl font-bold">2</p>
         </Card>
       </div>
 
@@ -186,33 +146,6 @@ export function Payments() {
         </div>
       </Card>
 
-      {/* Distribute Royalties */}
-      <Card className="glass-border p-6">
-        <h2 className="text-xl font-bold mb-4">Distribute Royalties</h2>
-        <p className="text-sm text-muted-foreground mb-4">
-          Trigger distribution of accumulated revenue to all beneficiaries
-        </p>
-        <div className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="distributeNamehash">Subdomain Namehash *</Label>
-            <Input
-              id="distributeNamehash"
-              placeholder="0x..."
-              value={distributeNamehash}
-              onChange={(e) => setDistributeNamehash(e.target.value)}
-            />
-          </div>
-
-          <Button
-            onClick={handleDistribute}
-            disabled={isPending}
-            className="w-full bg-gradient-to-r from-accent to-primary"
-          >
-            {isPending ? "Distributing..." : "Distribute Royalties"}
-          </Button>
-        </div>
-      </Card>
-
       {/* Claim Balance */}
       <Card className="glass-border p-6">
         <h2 className="text-xl font-bold mb-4">Claim Your Balance</h2>
@@ -232,10 +165,10 @@ export function Payments() {
 
           <Button
             onClick={handleClaim}
-            disabled={isPending || !availableBalance.balanceRaw || availableBalance.balanceRaw === BigInt(0)}
+            disabled={isPending || !pendingBalance.balanceRaw || pendingBalance.balanceRaw === BigInt(0)}
             className="w-full bg-gradient-to-r from-green-500 to-green-600"
           >
-            {isPending ? "Claiming..." : `Claim ${availableBalance.balance} ETH`}
+            {isPending ? "Claiming..." : `Claim ${pendingBalance.balance} ETH`}
           </Button>
         </div>
       </Card>

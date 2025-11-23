@@ -99,7 +99,7 @@ export function usePaymentSplitter() {
     const hash = await writeContractAsync({
       address: CONTRACTS.RoyaltyPaymentSplitter.address,
       abi: RoyaltyPaymentSplitterABI,
-      functionName: 'receiveRevenue',
+      functionName: 'deposit',
       args: [node],
       value: parseEther(amount),
     });
@@ -107,27 +107,16 @@ export function usePaymentSplitter() {
     return hash;
   };
 
-  const distributeRoyalties = async (domain: string) => {
-    const node = namehash(domain);
-    
-    const hash = await writeContractAsync({
-      address: CONTRACTS.RoyaltyPaymentSplitter.address,
-      abi: RoyaltyPaymentSplitterABI,
-      functionName: 'distributeRoyalties',
-      args: [node],
-    });
-    
-    return hash;
-  };
 
-  const claimBalance = async (domain: string) => {
+
+  const claimBalance = async (domain: string, beneficiary: string) => {
     const node = namehash(domain);
     
     const hash = await writeContractAsync({
       address: CONTRACTS.RoyaltyPaymentSplitter.address,
       abi: RoyaltyPaymentSplitterABI,
-      functionName: 'claimBalance',
-      args: [node],
+      functionName: 'release',
+      args: [node, beneficiary],
     });
     
     return hash;
@@ -135,7 +124,6 @@ export function usePaymentSplitter() {
 
   return {
     sendRevenue,
-    distributeRoyalties,
     claimBalance,
     isPending: isPending || isConfirming,
     isSuccess,
@@ -143,14 +131,14 @@ export function usePaymentSplitter() {
   };
 }
 
-// Hook for reading available balance
-export function useAvailableBalance(domain: string | undefined, beneficiary: string | undefined) {
+// Hook for reading pending balance for a beneficiary
+export function usePendingBalance(domain: string | undefined, beneficiary: string | undefined) {
   const node = domain ? namehash(domain) : undefined;
   
   const { data, isError, isLoading, refetch } = useReadContract({
     address: CONTRACTS.RoyaltyPaymentSplitter.address,
     abi: RoyaltyPaymentSplitterABI,
-    functionName: 'getAvailableBalance',
+    functionName: 'pending',
     args: node && beneficiary ? [node, beneficiary] : undefined,
     query: {
       enabled: !!node && !!beneficiary,
@@ -166,28 +154,7 @@ export function useAvailableBalance(domain: string | undefined, beneficiary: str
   };
 }
 
-// Hook for reading total distributed amount
-export function useTotalDistributed(domain: string | undefined) {
-  const node = domain ? namehash(domain) : undefined;
-  
-  const { data, isError, isLoading, refetch } = useReadContract({
-    address: CONTRACTS.RoyaltyPaymentSplitter.address,
-    abi: RoyaltyPaymentSplitterABI,
-    functionName: 'getTotalDistributed',
-    args: node ? [node] : undefined,
-    query: {
-      enabled: !!node,
-    },
-  });
 
-  return {
-    total: data ? formatEther(data as bigint) : '0',
-    totalRaw: data as bigint | undefined,
-    isError,
-    isLoading,
-    refetch,
-  };
-}
 
 // Hook for reading royalty token balance (ERC1155)
 export function useRoyaltyTokenBalance(domain: string | undefined, address: string | undefined) {

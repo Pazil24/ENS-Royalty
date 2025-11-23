@@ -1,15 +1,20 @@
 "use client"
 
 import { Card } from "@/components/ui/card"
-import { TrendingUp, Users, Lock, Unlock, ExternalLink, Globe, ChevronDown, ChevronUp } from "lucide-react"
+import { TrendingUp, Users, Lock, Unlock, ExternalLink, Globe, ChevronDown, ChevronUp, Send, Wallet } from "lucide-react"
 import { useAccount, useEnsName, useReadContracts } from "wagmi"
 import { useState, useEffect } from "react"
 import { formatEther, namehash } from "viem"
 import { sepolia } from "viem/chains"
 import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { CONTRACTS } from "@/lib/config/contracts"
 import SubdomainFactoryABI from "@/lib/abis/SubdomainFactory.json"
 import { useSubdomains } from "@/lib/context/SubdomainContext"
+import { usePaymentSplitter, usePendingBalance } from "@/hooks/use-ens-royalty"
+import { toast } from "sonner"
 
 interface Subdomain {
   name: string
@@ -43,6 +48,51 @@ export function Dashboard() {
   const { subdomains: contextSubdomains } = useSubdomains()
   const [ensDomains, setEnsDomains] = useState<ENSDomain[]>([])
   const [isLoading, setIsLoading] = useState(false)
+  const [selectedSubdomain, setSelectedSubdomain] = useState<string | null>(null)
+  const [paymentAmount, setPaymentAmount] = useState("")
+  const [showPaymentDialog, setShowPaymentDialog] = useState(false)
+  
+  const { sendRevenue, claimBalance, isPending } = usePaymentSplitter()
+  const pendingBalance = usePendingBalance(
+    selectedSubdomain || undefined,
+    address
+  )
+  
+  const handleSendPayment = async () => {
+    if (!selectedSubdomain || !paymentAmount) {
+      toast.error("Please enter a payment amount")
+      return
+    }
+
+    try {
+      const hash = await sendRevenue(selectedSubdomain, paymentAmount)
+      toast.success("Payment sent successfully!")
+      toast.info(`Transaction: ${hash.slice(0, 10)}...${hash.slice(-8)}`)
+      setShowPaymentDialog(false)
+      setPaymentAmount("")
+      setSelectedSubdomain(null)
+    } catch (error: any) {
+      console.error("Payment error:", error)
+      toast.error(error?.message || "Failed to send payment")
+    }
+  }
+
+  const handleClaimBalance = async (domain: string) => {
+    if (!address) {
+      toast.error("Please connect your wallet")
+      return
+    }
+
+    try {
+      const hash = await claimBalance(domain, address)
+      toast.success("Balance claimed successfully!")
+      toast.info(`Transaction: ${hash.slice(0, 10)}...${hash.slice(-8)}`)
+      pendingBalance.refetch()
+    } catch (error: any) {
+      console.error("Claim error:", error)
+      toast.error(error?.message || "Failed to claim balance")
+    }
+  }
   
   // Update ENS domains when context subdomains change
   useEffect(() => {
@@ -252,6 +302,31 @@ export function Dashboard() {
                               ))}
                             </div>
                           </div>
+                          
+                          <div className="mt-3 pt-3 border-t border-border flex gap-2">
+                            <Button 
+                              size="sm"
+                              className="flex-1 bg-gradient-to-r from-primary to-accent hover:shadow-lg"
+                              onClick={() => {
+                                setSelectedSubdomain(subdomain.fullName)
+                                setShowPaymentDialog(true)
+                              }}
+                            >
+                              <Send className="w-4 h-4 mr-2" />
+                              Send Payment
+                            </Button>
+                            {parseFloat(subdomain.availableBalance) > 0 && (
+                              <Button 
+                                size="sm"
+                                variant="outline"
+                                onClick={() => handleClaimBalance(subdomain.fullName)}
+                                disabled={isPending}
+                              >
+                                <Wallet className="w-4 h-4 mr-2" />
+                                Claim
+                              </Button>
+                            )}
+                          </div>
                         </Card>
                       ))}
                     </div>
@@ -447,6 +522,75 @@ export function Dashboard() {
           ))}
         </div>
       </div>
+      
+      {/* Payment Dialog */}
+      <Dialog open={showPaymentDialog} onOpenChange={setShowPaymentDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Send Payment to Subdomain</DialogTitle>
+            <DialogDescription>
+              Send ETH to <span className="font-mono text-primary">{selectedSubdomain}</span>. 
+              The payment will be automatically split among all beneficiaries according to their shares.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4 py-4">
+            <div>
+              <Label htmlFor="subdomain">Subdomain</Label>
+              <Input
+                id="subdomain"
+                value={selectedSubdomain || ""}
+                disabled
+                className="font-mono text-sm"
+              />
+            </div>
+            
+            <div>
+              <Label htmlFor="amount">Amount (ETH) *</Label>
+              <Input
+                id="amount"
+                type="number"
+                step="0.001"
+                placeholder="0.1"
+                value={paymentAmount}
+                onChange={(e) => setPaymentAmount(e.target.value)}
+              />
+              <p className="text-xs text-muted-foreground mt-1">
+                Minimum: 0.001 ETH
+              </p>
+            </div>
+            
+            {pendingBalance.balance && parseFloat(pendingBalance.balance) > 0 && (
+              <div className="bg-accent/10 border border-accent/30 rounded-lg p-3">
+                <p className="text-xs text-muted-foreground mb-1">Your Pending Balance</p>
+                <p className="text-lg font-bold text-accent">{pendingBalance.balance} ETH</p>
+              </div>
+            )}
+          </div>
+          
+          <DialogFooter>
+            <Button 
+              type="button" 
+              variant="outline" 
+              onClick={() => {
+                setShowPaymentDialog(false)
+                setPaymentAmount("")
+                setSelectedSubdomain(null)
+              }}
+            >
+              Cancel
+            </Button>
+            <Button 
+              type="button"
+              onClick={handleSendPayment}
+              disabled={isPending || !paymentAmount}
+              className="bg-gradient-to-r from-primary to-accent"
+            >
+              {isPending ? "Sending..." : "Send Payment"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
