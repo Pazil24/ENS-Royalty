@@ -1,0 +1,36 @@
+{
+  "language": "Solidity",
+  "sources": {
+    "contracts/RoyaltyNameWrapper.sol": {
+      "content": "// SPDX-License-Identifier: MIT\r\npragma solidity ^0.8.0;\r\n\r\ninterface INameWrapper {\r\n    function setSubnodeOwner(bytes32 parentNode, string memory label, address owner, uint32 fuses, uint64 expiry) external returns (bytes32);\r\n}\r\n\r\ninterface IRoyaltyManager {\r\n    function mintRoyalty(bytes32 node, address to, uint256 amount) external;\r\n    function lockRoyaltySupply(bytes32 node) external;\r\n}\r\n\r\ncontract RoyaltyNameWrapper {\r\n    INameWrapper public nameWrapper;\r\n    IRoyaltyManager public royaltyManager;\r\n    \r\n    // Fuse constants (aligned with ENS NameWrapper design)\r\n    uint32 public constant CANNOT_CHANGE_ROYALTY = 1;\r\n    uint32 public constant PARENT_CANNOT_CONTROL = 2;\r\n    uint32 public constant CANNOT_BURN_FUSES = 64;\r\n    \r\n    struct RoyaltyData {\r\n        bool hasRoyalty;\r\n        uint32 fuses;\r\n        uint256 lockedAmount;\r\n        bool isLocked;\r\n    }\r\n    \r\n    mapping(bytes32 => RoyaltyData) public royaltyData;\r\n    \r\n    event SubdomainCreatedWithRoyalty(bytes32 indexed parentNode, bytes32 indexed childNode, address owner, uint256 royaltyAmount);\r\n    event FusesBurned(bytes32 indexed node, uint32 fuses);\r\n    event RoyaltyLocked(bytes32 indexed node, uint256 amount);\r\n\r\n    error AlreadyLocked(bytes32 node);\r\n    error FuseAlreadyBurned(bytes32 node, uint32 fuse);\r\n    error Unauthorised(bytes32 node);\r\n\r\n    constructor(address _nameWrapper, address _royaltyManager) {\r\n        nameWrapper = INameWrapper(_nameWrapper);\r\n        royaltyManager = IRoyaltyManager(_royaltyManager);\r\n    }\r\n\r\n    function wrapWithRoyalty(\r\n        bytes32 parentNode,\r\n        string memory label,\r\n        address owner,\r\n        uint256 royaltyAmount\r\n    ) external returns (bytes32) {\r\n        // Check if parent is locked before allowing subdomain creation\r\n        if (royaltyData[parentNode].isLocked) revert AlreadyLocked(parentNode);\r\n        \r\n        bytes32 childNode = nameWrapper.setSubnodeOwner(parentNode, label, owner, 0, 0);\r\n        \r\n        royaltyManager.mintRoyalty(childNode, owner, royaltyAmount);\r\n        \r\n        royaltyData[childNode] = RoyaltyData({\r\n            hasRoyalty: true,\r\n            fuses: 0,\r\n            lockedAmount: royaltyAmount,\r\n            isLocked: false\r\n        });\r\n        \r\n        emit SubdomainCreatedWithRoyalty(parentNode, childNode, owner, royaltyAmount);\r\n        return childNode;\r\n    }\r\n\r\n    function wrapWithRoyaltyAndLock(\r\n        bytes32 parentNode,\r\n        string memory label,\r\n        address owner,\r\n        uint256 royaltyAmount\r\n    ) external returns (bytes32) {\r\n        bytes32 childNode = nameWrapper.setSubnodeOwner(parentNode, label, owner, 0, 0);\r\n        \r\n        royaltyManager.mintRoyalty(childNode, owner, royaltyAmount);\r\n        \r\n        royaltyData[childNode] = RoyaltyData({\r\n            hasRoyalty: true,\r\n            fuses: CANNOT_CHANGE_ROYALTY | PARENT_CANNOT_CONTROL,\r\n            lockedAmount: royaltyAmount,\r\n            isLocked: true\r\n        });\r\n        \r\n        royaltyManager.lockRoyaltySupply(childNode);\r\n        \r\n        emit SubdomainCreatedWithRoyalty(parentNode, childNode, owner, royaltyAmount);\r\n        emit FusesBurned(childNode, CANNOT_CHANGE_ROYALTY | PARENT_CANNOT_CONTROL);\r\n        emit RoyaltyLocked(childNode, royaltyAmount);\r\n        \r\n        return childNode;\r\n    }\r\n\r\n    function burnFuses(bytes32 node, uint32 fuses) external {\r\n        RoyaltyData storage data = royaltyData[node];\r\n        \r\n        if (!data.hasRoyalty) revert Unauthorised(node);\r\n        if (data.fuses & fuses != 0) revert FuseAlreadyBurned(node, fuses);\r\n        \r\n        data.fuses |= fuses;\r\n        \r\n        if (fuses & CANNOT_CHANGE_ROYALTY != 0 && !data.isLocked) {\r\n            data.isLocked = true;\r\n            royaltyManager.lockRoyaltySupply(node);\r\n            emit RoyaltyLocked(node, data.lockedAmount);\r\n        }\r\n        \r\n        emit FusesBurned(node, fuses);\r\n    }\r\n\r\n    function isFuseBurned(bytes32 node, uint32 fuse) external view returns (bool) {\r\n        return royaltyData[node].fuses & fuse != 0;\r\n    }\r\n\r\n    function isRoyaltyLocked(bytes32 node) external view returns (bool) {\r\n        return royaltyData[node].isLocked;\r\n    }\r\n\r\n    function getRoyaltyData(bytes32 node) external view returns (RoyaltyData memory) {\r\n        return royaltyData[node];\r\n    }\r\n}\r\n\r\n"
+    }
+  },
+  "settings": {
+    "optimizer": {
+      "enabled": true,
+      "runs": 200
+    },
+    "evmVersion": "paris",
+    "outputSelection": {
+      "*": {
+        "*": [
+          "abi",
+          "evm.bytecode",
+          "evm.deployedBytecode",
+          "evm.methodIdentifiers",
+          "metadata",
+          "devdoc",
+          "userdoc",
+          "storageLayout",
+          "evm.gasEstimates"
+        ],
+        "": [
+          "ast"
+        ]
+      }
+    },
+    "metadata": {
+      "useLiteralContent": true
+    }
+  }
+}

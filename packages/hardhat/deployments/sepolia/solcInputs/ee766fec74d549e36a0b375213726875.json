@@ -1,0 +1,36 @@
+{
+  "language": "Solidity",
+  "sources": {
+    "contracts/RoyaltyPaymentSplitter.sol": {
+      "content": "// SPDX-License-Identifier: MIT\r\npragma solidity ^0.8.0;\r\n\r\ninterface IRoyaltyManager {\r\n    function royaltyRate(bytes32 node) external view returns (uint256);\r\n}\r\n\r\ncontract RoyaltyPaymentSplitter {\r\n    IRoyaltyManager public royaltyManager;\r\n    \r\n    mapping(bytes32 => address[]) public beneficiaries;\r\n    mapping(bytes32 => uint256[]) public shares;\r\n    mapping(bytes32 => mapping(address => uint256)) public pending;\r\n    mapping(bytes32 => address) public parentRecipient;\r\n    mapping(bytes32 => bytes32) public parentNode;\r\n\r\n    event PaymentReceived(bytes32 indexed node, address from, uint256 amount);\r\n    event PaymentReleased(bytes32 indexed node, address to, uint256 amount);\r\n    event RoyaltySplit(bytes32 indexed node, address indexed parent, uint256 parentAmount, address indexed owner, uint256 ownerAmount);\r\n\r\n    constructor(address _royaltyManager) {\r\n        royaltyManager = IRoyaltyManager(_royaltyManager);\r\n    }\r\n\r\n    function setupSplit(bytes32 node, address[] memory _beneficiaries, uint256[] memory _shares) external {\r\n        require(_beneficiaries.length == _shares.length, \"Length mismatch\");\r\n        beneficiaries[node] = _beneficiaries;\r\n        shares[node] = _shares;\r\n    }\r\n\r\n    function setupParentRoyalty(bytes32 node, bytes32 _parentNode, address _parentRecipient) external {\r\n        parentNode[node] = _parentNode;\r\n        parentRecipient[node] = _parentRecipient;\r\n    }\r\n\r\n    function deposit(bytes32 node) external payable {\r\n        uint256 amount = msg.value;\r\n        \r\n        // If parent royalty is configured, split with parent first\r\n        bytes32 parent = parentNode[node];\r\n        address parentAddr = parentRecipient[node];\r\n        \r\n        if (parent != bytes32(0) && parentAddr != address(0)) {\r\n            uint256 rate = royaltyManager.royaltyRate(parent);\r\n            if (rate > 0) {\r\n                uint256 parentAmount = (amount * rate) / 10000;\r\n                uint256 ownerAmount = amount - parentAmount;\r\n                \r\n                pending[node][parentAddr] += parentAmount;\r\n                amount = ownerAmount;\r\n                \r\n                emit RoyaltySplit(node, parentAddr, parentAmount, msg.sender, ownerAmount);\r\n            }\r\n        }\r\n        \r\n        // Then split remaining amount among beneficiaries\r\n        uint256 total = _totalShares(node);\r\n        if (total > 0) {\r\n            address[] memory recipients = beneficiaries[node];\r\n            uint256[] memory amounts = shares[node];\r\n            \r\n            for (uint256 i = 0; i < recipients.length; i++) {\r\n                pending[node][recipients[i]] += (amount * amounts[i]) / total;\r\n            }\r\n        } else {\r\n            // If no split configured, give everything to sender (fallback)\r\n            pending[node][msg.sender] += amount;\r\n        }\r\n        \r\n        emit PaymentReceived(node, msg.sender, msg.value);\r\n    }\r\n\r\n    function release(bytes32 node, address payable account) external {\r\n        uint256 amount = pending[node][account];\r\n        require(amount > 0, \"No payment due\");\r\n        \r\n        pending[node][account] = 0;\r\n        account.transfer(amount);\r\n        \r\n        emit PaymentReleased(node, account, amount);\r\n    }\r\n\r\n    function _totalShares(bytes32 node) internal view returns (uint256) {\r\n        uint256 total = 0;\r\n        uint256[] memory nodeShares = shares[node];\r\n        for (uint256 i = 0; i < nodeShares.length; i++) {\r\n            total += nodeShares[i];\r\n        }\r\n        return total;\r\n    }\r\n}\r\n"
+    }
+  },
+  "settings": {
+    "optimizer": {
+      "enabled": true,
+      "runs": 200
+    },
+    "evmVersion": "paris",
+    "outputSelection": {
+      "*": {
+        "*": [
+          "abi",
+          "evm.bytecode",
+          "evm.deployedBytecode",
+          "evm.methodIdentifiers",
+          "metadata",
+          "devdoc",
+          "userdoc",
+          "storageLayout",
+          "evm.gasEstimates"
+        ],
+        "": [
+          "ast"
+        ]
+      }
+    },
+    "metadata": {
+      "useLiteralContent": true
+    }
+  }
+}

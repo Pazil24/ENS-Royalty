@@ -33,16 +33,17 @@ const deployENSRoyalty: DeployFunction = async function (hre: HardhatRuntimeEnvi
     console.log("✅ Using Sepolia ENS addresses");
   }
 
-  // 2. Deploy Payment Splitter
-  const splitter = await deploy("RoyaltyPaymentSplitter", {
+  // 2. Deploy Royalty Manager (ERC1155) - must be deployed before splitter
+  const manager = await deploy("ENSRoyaltyManager", {
     from: deployer,
     log: true,
     autoMine: true,
   });
 
-  // 3. Deploy Royalty Manager (ERC1155)
-  const manager = await deploy("ENSRoyaltyManager", {
+  // 3. Deploy Payment Splitter (needs royalty manager address)
+  const splitter = await deploy("RoyaltyPaymentSplitter", {
     from: deployer,
+    args: [manager.address],
     log: true,
     autoMine: true,
   });

@@ -47,6 +47,9 @@ contract RoyaltyNameWrapper {
         address owner,
         uint256 royaltyAmount
     ) external returns (bytes32) {
+        // Check if parent is locked before allowing subdomain creation
+        if (royaltyData[parentNode].isLocked) revert AlreadyLocked(parentNode);
+        
         bytes32 childNode = nameWrapper.setSubnodeOwner(parentNode, label, owner, 0, 0);
         
         royaltyManager.mintRoyalty(childNode, owner, royaltyAmount);
@@ -111,6 +114,10 @@ contract RoyaltyNameWrapper {
 
     function isRoyaltyLocked(bytes32 node) external view returns (bool) {
         return royaltyData[node].isLocked;
+    }
+
+    function getRoyaltyData(bytes32 node) external view returns (RoyaltyData memory) {
+        return royaltyData[node];
     }
 }
 

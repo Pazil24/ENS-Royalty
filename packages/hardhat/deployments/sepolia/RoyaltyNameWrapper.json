@@ -1,0 +1,538 @@
+{
+  "address": "0x0E31cfeE451Fd05254784F94149C9F6E38247197",
+  "abi": [
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "_nameWrapper",
+          "type": "address"
+        },
+        {
+          "internalType": "address",
+          "name": "_royaltyManager",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "nonpayable",
+      "type": "constructor"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "bytes32",
+          "name": "node",
+          "type": "bytes32"
+        }
+      ],
+      "name": "AlreadyLocked",
+      "type": "error"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "bytes32",
+          "name": "node",
+          "type": "bytes32"
+        },
+        {
+          "internalType": "uint32",
+          "name": "fuse",
+          "type": "uint32"
+        }
+      ],
+      "name": "FuseAlreadyBurned",
+      "type": "error"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "bytes32",
+          "name": "node",
+          "type": "bytes32"
+        }
+      ],
+      "name": "Unauthorised",
+      "type": "error"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "bytes32",
+          "name": "node",
+          "type": "bytes32"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint32",
+          "name": "fuses",
+          "type": "uint32"
+        }
+      ],
+      "name": "FusesBurned",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "bytes32",
+          "name": "node",
+          "type": "bytes32"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "amount",
+          "type": "uint256"
+        }
+      ],
+      "name": "RoyaltyLocked",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "bytes32",
+          "name": "parentNode",
+          "type": "bytes32"
+        },
+        {
+          "indexed": true,
+          "internalType": "bytes32",
+          "name": "childNode",
+          "type": "bytes32"
+        },
+        {
+          "indexed": false,
+          "internalType": "address",
+          "name": "owner",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "royaltyAmount",
+          "type": "uint256"
+        }
+      ],
+      "name": "SubdomainCreatedWithRoyalty",
+      "type": "event"
+    },
+    {
+      "inputs": [],
+      "name": "CANNOT_BURN_FUSES",
+      "outputs": [
+        {
+          "internalType": "uint32",
+          "name": "",
+          "type": "uint32"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "CANNOT_CHANGE_ROYALTY",
+      "outputs": [
+        {
+          "internalType": "uint32",
+          "name": "",
+          "type": "uint32"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "PARENT_CANNOT_CONTROL",
+      "outputs": [
+        {
+          "internalType": "uint32",
+          "name": "",
+          "type": "uint32"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "bytes32",
+          "name": "node",
+          "type": "bytes32"
+        },
+        {
+          "internalType": "uint32",
+          "name": "fuses",
+          "type": "uint32"
+        }
+      ],
+      "name": "burnFuses",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "bytes32",
+          "name": "node",
+          "type": "bytes32"
+        }
+      ],
+      "name": "getRoyaltyData",
+      "outputs": [
+        {
+          "components": [
+            {
+              "internalType": "bool",
+              "name": "hasRoyalty",
+              "type": "bool"
+            },
+            {
+              "internalType": "uint32",
+              "name": "fuses",
+              "type": "uint32"
+            },
+            {
+              "internalType": "uint256",
+              "name": "lockedAmount",
+              "type": "uint256"
+            },
+            {
+              "internalType": "bool",
+              "name": "isLocked",
+              "type": "bool"
+            }
+          ],
+          "internalType": "struct RoyaltyNameWrapper.RoyaltyData",
+          "name": "",
+          "type": "tuple"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "bytes32",
+          "name": "node",
+          "type": "bytes32"
+        },
+        {
+          "internalType": "uint32",
+          "name": "fuse",
+          "type": "uint32"
+        }
+      ],
+      "name": "isFuseBurned",
+      "outputs": [
+        {
+          "internalType": "bool",
+          "name": "",
+          "type": "bool"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "bytes32",
+          "name": "node",
+          "type": "bytes32"
+        }
+      ],
+      "name": "isRoyaltyLocked",
+      "outputs": [
+        {
+          "internalType": "bool",
+          "name": "",
+          "type": "bool"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "nameWrapper",
+      "outputs": [
+        {
+          "internalType": "contract INameWrapper",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "bytes32",
+          "name": "",
+          "type": "bytes32"
+        }
+      ],
+      "name": "royaltyData",
+      "outputs": [
+        {
+          "internalType": "bool",
+          "name": "hasRoyalty",
+          "type": "bool"
+        },
+        {
+          "internalType": "uint32",
+          "name": "fuses",
+          "type": "uint32"
+        },
+        {
+          "internalType": "uint256",
+          "name": "lockedAmount",
+          "type": "uint256"
+        },
+        {
+          "internalType": "bool",
+          "name": "isLocked",
+          "type": "bool"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "royaltyManager",
+      "outputs": [
+        {
+          "internalType": "contract IRoyaltyManager",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "bytes32",
+          "name": "parentNode",
+          "type": "bytes32"
+        },
+        {
+          "internalType": "string",
+          "name": "label",
+          "type": "string"
+        },
+        {
+          "internalType": "address",
+          "name": "owner",
+          "type": "address"
+        },
+        {
+          "internalType": "uint256",
+          "name": "royaltyAmount",
+          "type": "uint256"
+        }
+      ],
+      "name": "wrapWithRoyalty",
+      "outputs": [
+        {
+          "internalType": "bytes32",
+          "name": "",
+          "type": "bytes32"
+        }
+      ],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "bytes32",
+          "name": "parentNode",
+          "type": "bytes32"
+        },
+        {
+          "internalType": "string",
+          "name": "label",
+          "type": "string"
+        },
+        {
+          "internalType": "address",
+          "name": "owner",
+          "type": "address"
+        },
+        {
+          "internalType": "uint256",
+          "name": "royaltyAmount",
+          "type": "uint256"
+        }
+      ],
+      "name": "wrapWithRoyaltyAndLock",
+      "outputs": [
+        {
+          "internalType": "bytes32",
+          "name": "",
+          "type": "bytes32"
+        }
+      ],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    }
+  ],
+  "transactionHash": "0xf7532dfbc68a044cede145435a8f16c99208138928616f3a2edb3260e5450fa2",
+  "receipt": {
+    "to": null,
+    "from": "0x13C794f9f3678eB347d0dC1b1CA11e4A7D75faCc",
+    "contractAddress": "0x0E31cfeE451Fd05254784F94149C9F6E38247197",
+    "transactionIndex": 29,
+    "gasUsed": "725231",
+    "logsBloom": "0x00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+    "blockHash": "0x4bce2167ad635beef5f2b01ebbb2ed611a085f89e9d22c642ca88e06acd7fbc7",
+    "transactionHash": "0xf7532dfbc68a044cede145435a8f16c99208138928616f3a2edb3260e5450fa2",
+    "logs": [],
+    "blockNumber": 9687823,
+    "cumulativeGasUsed": "28181942",
+    "status": 1,
+    "byzantium": true
+  },
+  "args": [
+    "0x0635513f179D50A207757E05759CbD106d7dFcE8",
+    "0x31692D9370E9f448B822c47e7662ab6bf50AF216"
+  ],
+  "numDeployments": 1,
+  "solcInputHash": "4c29bef761082c269a7622fc5c682223",
+  "metadata": "{\"compiler\":{\"version\":\"0.8.20+commit.a1b79de6\"},\"language\":\"Solidity\",\"output\":{\"abi\":[{\"inputs\":[{\"internalType\":\"address\",\"name\":\"_nameWrapper\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"_royaltyManager\",\"type\":\"address\"}],\"stateMutability\":\"nonpayable\",\"type\":\"constructor\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"node\",\"type\":\"bytes32\"}],\"name\":\"AlreadyLocked\",\"type\":\"error\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"node\",\"type\":\"bytes32\"},{\"internalType\":\"uint32\",\"name\":\"fuse\",\"type\":\"uint32\"}],\"name\":\"FuseAlreadyBurned\",\"type\":\"error\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"node\",\"type\":\"bytes32\"}],\"name\":\"Unauthorised\",\"type\":\"error\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"bytes32\",\"name\":\"node\",\"type\":\"bytes32\"},{\"indexed\":false,\"internalType\":\"uint32\",\"name\":\"fuses\",\"type\":\"uint32\"}],\"name\":\"FusesBurned\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"bytes32\",\"name\":\"node\",\"type\":\"bytes32\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"amount\",\"type\":\"uint256\"}],\"name\":\"RoyaltyLocked\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"bytes32\",\"name\":\"parentNode\",\"type\":\"bytes32\"},{\"indexed\":true,\"internalType\":\"bytes32\",\"name\":\"childNode\",\"type\":\"bytes32\"},{\"indexed\":false,\"internalType\":\"address\",\"name\":\"owner\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"royaltyAmount\",\"type\":\"uint256\"}],\"name\":\"SubdomainCreatedWithRoyalty\",\"type\":\"event\"},{\"inputs\":[],\"name\":\"CANNOT_BURN_FUSES\",\"outputs\":[{\"internalType\":\"uint32\",\"name\":\"\",\"type\":\"uint32\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"CANNOT_CHANGE_ROYALTY\",\"outputs\":[{\"internalType\":\"uint32\",\"name\":\"\",\"type\":\"uint32\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"PARENT_CANNOT_CONTROL\",\"outputs\":[{\"internalType\":\"uint32\",\"name\":\"\",\"type\":\"uint32\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"node\",\"type\":\"bytes32\"},{\"internalType\":\"uint32\",\"name\":\"fuses\",\"type\":\"uint32\"}],\"name\":\"burnFuses\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"node\",\"type\":\"bytes32\"}],\"name\":\"getRoyaltyData\",\"outputs\":[{\"components\":[{\"internalType\":\"bool\",\"name\":\"hasRoyalty\",\"type\":\"bool\"},{\"internalType\":\"uint32\",\"name\":\"fuses\",\"type\":\"uint32\"},{\"internalType\":\"uint256\",\"name\":\"lockedAmount\",\"type\":\"uint256\"},{\"internalType\":\"bool\",\"name\":\"isLocked\",\"type\":\"bool\"}],\"internalType\":\"struct RoyaltyNameWrapper.RoyaltyData\",\"name\":\"\",\"type\":\"tuple\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"node\",\"type\":\"bytes32\"},{\"internalType\":\"uint32\",\"name\":\"fuse\",\"type\":\"uint32\"}],\"name\":\"isFuseBurned\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"node\",\"type\":\"bytes32\"}],\"name\":\"isRoyaltyLocked\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"nameWrapper\",\"outputs\":[{\"internalType\":\"contract INameWrapper\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"\",\"type\":\"bytes32\"}],\"name\":\"royaltyData\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"hasRoyalty\",\"type\":\"bool\"},{\"internalType\":\"uint32\",\"name\":\"fuses\",\"type\":\"uint32\"},{\"internalType\":\"uint256\",\"name\":\"lockedAmount\",\"type\":\"uint256\"},{\"internalType\":\"bool\",\"name\":\"isLocked\",\"type\":\"bool\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"royaltyManager\",\"outputs\":[{\"internalType\":\"contract IRoyaltyManager\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"parentNode\",\"type\":\"bytes32\"},{\"internalType\":\"string\",\"name\":\"label\",\"type\":\"string\"},{\"internalType\":\"address\",\"name\":\"owner\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"royaltyAmount\",\"type\":\"uint256\"}],\"name\":\"wrapWithRoyalty\",\"outputs\":[{\"internalType\":\"bytes32\",\"name\":\"\",\"type\":\"bytes32\"}],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"parentNode\",\"type\":\"bytes32\"},{\"internalType\":\"string\",\"name\":\"label\",\"type\":\"string\"},{\"internalType\":\"address\",\"name\":\"owner\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"royaltyAmount\",\"type\":\"uint256\"}],\"name\":\"wrapWithRoyaltyAndLock\",\"outputs\":[{\"internalType\":\"bytes32\",\"name\":\"\",\"type\":\"bytes32\"}],\"stateMutability\":\"nonpayable\",\"type\":\"function\"}],\"devdoc\":{\"kind\":\"dev\",\"methods\":{},\"version\":1},\"userdoc\":{\"kind\":\"user\",\"methods\":{},\"version\":1}},\"settings\":{\"compilationTarget\":{\"contracts/RoyaltyNameWrapper.sol\":\"RoyaltyNameWrapper\"},\"evmVersion\":\"paris\",\"libraries\":{},\"metadata\":{\"bytecodeHash\":\"ipfs\",\"useLiteralContent\":true},\"optimizer\":{\"enabled\":true,\"runs\":200},\"remappings\":[]},\"sources\":{\"contracts/RoyaltyNameWrapper.sol\":{\"content\":\"// SPDX-License-Identifier: MIT\\r\\npragma solidity ^0.8.0;\\r\\n\\r\\ninterface INameWrapper {\\r\\n    function setSubnodeOwner(bytes32 parentNode, string memory label, address owner, uint32 fuses, uint64 expiry) external returns (bytes32);\\r\\n}\\r\\n\\r\\ninterface IRoyaltyManager {\\r\\n    function mintRoyalty(bytes32 node, address to, uint256 amount) external;\\r\\n    function lockRoyaltySupply(bytes32 node) external;\\r\\n}\\r\\n\\r\\ncontract RoyaltyNameWrapper {\\r\\n    INameWrapper public nameWrapper;\\r\\n    IRoyaltyManager public royaltyManager;\\r\\n    \\r\\n    // Fuse constants (aligned with ENS NameWrapper design)\\r\\n    uint32 public constant CANNOT_CHANGE_ROYALTY = 1;\\r\\n    uint32 public constant PARENT_CANNOT_CONTROL = 2;\\r\\n    uint32 public constant CANNOT_BURN_FUSES = 64;\\r\\n    \\r\\n    struct RoyaltyData {\\r\\n        bool hasRoyalty;\\r\\n        uint32 fuses;\\r\\n        uint256 lockedAmount;\\r\\n        bool isLocked;\\r\\n    }\\r\\n    \\r\\n    mapping(bytes32 => RoyaltyData) public royaltyData;\\r\\n    \\r\\n    event SubdomainCreatedWithRoyalty(bytes32 indexed parentNode, bytes32 indexed childNode, address owner, uint256 royaltyAmount);\\r\\n    event FusesBurned(bytes32 indexed node, uint32 fuses);\\r\\n    event RoyaltyLocked(bytes32 indexed node, uint256 amount);\\r\\n\\r\\n    error AlreadyLocked(bytes32 node);\\r\\n    error FuseAlreadyBurned(bytes32 node, uint32 fuse);\\r\\n    error Unauthorised(bytes32 node);\\r\\n\\r\\n    constructor(address _nameWrapper, address _royaltyManager) {\\r\\n        nameWrapper = INameWrapper(_nameWrapper);\\r\\n        royaltyManager = IRoyaltyManager(_royaltyManager);\\r\\n    }\\r\\n\\r\\n    function wrapWithRoyalty(\\r\\n        bytes32 parentNode,\\r\\n        string memory label,\\r\\n        address owner,\\r\\n        uint256 royaltyAmount\\r\\n    ) external returns (bytes32) {\\r\\n        // Check if parent is locked before allowing subdomain creation\\r\\n        if (royaltyData[parentNode].isLocked) revert AlreadyLocked(parentNode);\\r\\n        \\r\\n        bytes32 childNode = nameWrapper.setSubnodeOwner(parentNode, label, owner, 0, 0);\\r\\n        \\r\\n        royaltyManager.mintRoyalty(childNode, owner, royaltyAmount);\\r\\n        \\r\\n        royaltyData[childNode] = RoyaltyData({\\r\\n            hasRoyalty: true,\\r\\n            fuses: 0,\\r\\n            lockedAmount: royaltyAmount,\\r\\n            isLocked: false\\r\\n        });\\r\\n        \\r\\n        emit SubdomainCreatedWithRoyalty(parentNode, childNode, owner, royaltyAmount);\\r\\n        return childNode;\\r\\n    }\\r\\n\\r\\n    function wrapWithRoyaltyAndLock(\\r\\n        bytes32 parentNode,\\r\\n        string memory label,\\r\\n        address owner,\\r\\n        uint256 royaltyAmount\\r\\n    ) external returns (bytes32) {\\r\\n        bytes32 childNode = nameWrapper.setSubnodeOwner(parentNode, label, owner, 0, 0);\\r\\n        \\r\\n        royaltyManager.mintRoyalty(childNode, owner, royaltyAmount);\\r\\n        \\r\\n        royaltyData[childNode] = RoyaltyData({\\r\\n            hasRoyalty: true,\\r\\n            fuses: CANNOT_CHANGE_ROYALTY | PARENT_CANNOT_CONTROL,\\r\\n            lockedAmount: royaltyAmount,\\r\\n            isLocked: true\\r\\n        });\\r\\n        \\r\\n        royaltyManager.lockRoyaltySupply(childNode);\\r\\n        \\r\\n        emit SubdomainCreatedWithRoyalty(parentNode, childNode, owner, royaltyAmount);\\r\\n        emit FusesBurned(childNode, CANNOT_CHANGE_ROYALTY | PARENT_CANNOT_CONTROL);\\r\\n        emit RoyaltyLocked(childNode, royaltyAmount);\\r\\n        \\r\\n        return childNode;\\r\\n    }\\r\\n\\r\\n    function burnFuses(bytes32 node, uint32 fuses) external {\\r\\n        RoyaltyData storage data = royaltyData[node];\\r\\n        \\r\\n        if (!data.hasRoyalty) revert Unauthorised(node);\\r\\n        if (data.fuses & fuses != 0) revert FuseAlreadyBurned(node, fuses);\\r\\n        \\r\\n        data.fuses |= fuses;\\r\\n        \\r\\n        if (fuses & CANNOT_CHANGE_ROYALTY != 0 && !data.isLocked) {\\r\\n            data.isLocked = true;\\r\\n            royaltyManager.lockRoyaltySupply(node);\\r\\n            emit RoyaltyLocked(node, data.lockedAmount);\\r\\n        }\\r\\n        \\r\\n        emit FusesBurned(node, fuses);\\r\\n    }\\r\\n\\r\\n    function isFuseBurned(bytes32 node, uint32 fuse) external view returns (bool) {\\r\\n        return royaltyData[node].fuses & fuse != 0;\\r\\n    }\\r\\n\\r\\n    function isRoyaltyLocked(bytes32 node) external view returns (bool) {\\r\\n        return royaltyData[node].isLocked;\\r\\n    }\\r\\n\\r\\n    function getRoyaltyData(bytes32 node) external view returns (RoyaltyData memory) {\\r\\n        return royaltyData[node];\\r\\n    }\\r\\n}\\r\\n\\r\\n\",\"keccak256\":\"0xac8de15ddb60dd7bf0f89020e2a768d35add0685f9e1045c2dcbb43c58048192\",\"license\":\"MIT\"}},\"version\":1}",
+  "bytecode": "0x608060405234801561001057600080fd5b50604051610c08380380610c0883398101604081905261002f9161007c565b600080546001600160a01b039384166001600160a01b031991821617909155600180549290931691161790556100af565b80516001600160a01b038116811461007757600080fd5b919050565b6000806040838503121561008f57600080fd5b61009883610060565b91506100a660208401610060565b90509250929050565b610b4a806100be6000396000f3fe608060405234801561001057600080fd5b50600436106100b45760003560e01c80638b7af22a116100715780638b7af22a146101d8578063a8e5fbc0146101ed578063aa91f85414610218578063c1730bab1461022b578063ee295d62146102ee578063f75fa4b91461030157600080fd5b80630f9594d1146100b95780632389f0a61461012957806324902e011461016b578063421e0a24146101885780635fca7615146101905780637416ffc3146101b1575b600080fd5b6100fb6100c7366004610918565b600260208190526000918252604090912080546001820154919092015460ff80841693610100900463ffffffff1692911684565b60408051941515855263ffffffff909316602085015291830152151560608201526080015b60405180910390f35b61015b610137366004610931565b6000828152600260205260409020546101009004811663ffffffff16151592915050565b6040519015158152602001610120565b610173600181565b60405163ffffffff9091168152602001610120565b610173604081565b6101a361019e36600461099c565b610309565b604051908152602001610120565b61015b6101bf366004610918565b6000908152600260208190526040909120015460ff1690565b6101eb6101e6366004610931565b6104fa565b005b600054610200906001600160a01b031681565b6040516001600160a01b039091168152602001610120565b6101a361022636600461099c565b610695565b6102b1610239366004610918565b604080516080810182526000808252602082018190529181018290526060810191909152506000908152600260208181526040928390208351608081018552815460ff8082161515835261010090910463ffffffff169382019390935260018201549481019490945290910154161515606082015290565b604051610120919081511515815260208083015163ffffffff16908201526040808301519082015260609182015115159181019190915260800190565b600154610200906001600160a01b031681565b610173600281565b60008481526002602081905260408220015460ff161561034457604051636489019160e01b8152600481018690526024015b60405180910390fd5b6000805460405163632c704360e11b81526001600160a01b039091169063c658e0869061037d9089908990899087908190600401610a6f565b6020604051808303816000875af115801561039c573d6000803e3d6000fd5b505050506040513d601f19601f820116820180604052508101906103c09190610afb565b600154604051631ce4ef1360e21b8152600481018390526001600160a01b03878116602483015260448201879052929350911690637393bc4c90606401600060405180830381600087803b15801561041757600080fd5b505af115801561042b573d6000803e3d6000fd5b5050604080516080810182526001808252600060208084018281528486018b8152606086018481528a855260028085529488902096518754935164ffffffffff1990941690151564ffffffff0019161761010063ffffffff90941693909302929092178655519385019390935591519201805460ff19169215159290921790915581516001600160a01b03891681529081018790528493508992507f0c903301268e9942773b5d8b4a89803a78b9a68e4f582724cb6d29f706549eaa910160405180910390a395945050505050565b6000828152600260205260409020805460ff1661052d5760405163727eabd760e11b81526004810184905260240161033b565b80546101009004821663ffffffff161561056957604051637d700fcd60e01b81526004810184905263ffffffff8316602482015260440161033b565b805463ffffffff80841661010080840492909216170264ffffffff001990911617815560018216158015906105a35750600281015460ff16155b156106555760028101805460ff1916600190811790915554604051639eef012b60e01b8152600481018590526001600160a01b0390911690639eef012b90602401600060405180830381600087803b1580156105fe57600080fd5b505af1158015610612573d6000803e3d6000fd5b50505050827f20441d5846016da1482806abb7b1c64ec643ed643cb1677541b375bfa935117d826001015460405161064c91815260200190565b60405180910390a25b60405163ffffffff8316815283907f264072e725a59c922d14a50f23a1be79ab993a3874f31d6d5e9bac01260d24d89060200160405180910390a2505050565b6000805460405163632c704360e11b815282916001600160a01b03169063c658e086906106ce9089908990899087908190600401610a6f565b6020604051808303816000875af11580156106ed573d6000803e3d6000fd5b505050506040513d601f19601f820116820180604052508101906107119190610afb565b600154604051631ce4ef1360e21b8152600481018390526001600160a01b03878116602483015260448201879052929350911690637393bc4c90606401600060405180830381600087803b15801561076857600080fd5b505af115801561077c573d6000803e3d6000fd5b5050604080516080810182526001808252600360208084019182528385018a81526060850184815260008a815260029384905287902095518654945164ffffffffff1990951690151564ffffffff0019161761010063ffffffff90951694909402939093178555518484015590519201805460ff191692151592909217909155549051639eef012b60e01b8152600481018590526001600160a01b039091169250639eef012b9150602401600060405180830381600087803b15801561084157600080fd5b505af1158015610855573d6000803e3d6000fd5b5050604080516001600160a01b0388168152602081018790528493508992507f0c903301268e9942773b5d8b4a89803a78b9a68e4f582724cb6d29f706549eaa910160405180910390a36040516003815281907f264072e725a59c922d14a50f23a1be79ab993a3874f31d6d5e9bac01260d24d89060200160405180910390a2807f20441d5846016da1482806abb7b1c64ec643ed643cb1677541b375bfa935117d8460405161090791815260200190565b60405180910390a295945050505050565b60006020828403121561092a57600080fd5b5035919050565b6000806040838503121561094457600080fd5b82359150602083013563ffffffff8116811461095f57600080fd5b809150509250929050565b634e487b7160e01b600052604160045260246000fd5b80356001600160a01b038116811461099757600080fd5b919050565b600080600080608085870312156109b257600080fd5b84359350602085013567ffffffffffffffff808211156109d157600080fd5b818701915087601f8301126109e557600080fd5b8135818111156109f7576109f761096a565b604051601f8201601f19908116603f01168101908382118183101715610a1f57610a1f61096a565b816040528281528a6020848701011115610a3857600080fd5b826020860160208301376000602084830101528097505050505050610a5f60408601610980565b9396929550929360600135925050565b8581526000602060a08184015286518060a085015260005b81811015610aa35788810183015185820160c001528201610a87565b50600060c08286018101919091526001600160a01b038816604086015263ffffffff87166060860152601f909101601f19168401019150610ae19050565b67ffffffffffffffff831660808301529695505050505050565b600060208284031215610b0d57600080fd5b505191905056fea2646970667358221220c72e25714992901d95417ba6fa2c3e647d1abe2d605e65fed8d7dd5dae6bec9264736f6c63430008140033",
+  "deployedBytecode": "0x608060405234801561001057600080fd5b50600436106100b45760003560e01c80638b7af22a116100715780638b7af22a146101d8578063a8e5fbc0146101ed578063aa91f85414610218578063c1730bab1461022b578063ee295d62146102ee578063f75fa4b91461030157600080fd5b80630f9594d1146100b95780632389f0a61461012957806324902e011461016b578063421e0a24146101885780635fca7615146101905780637416ffc3146101b1575b600080fd5b6100fb6100c7366004610918565b600260208190526000918252604090912080546001820154919092015460ff80841693610100900463ffffffff1692911684565b60408051941515855263ffffffff909316602085015291830152151560608201526080015b60405180910390f35b61015b610137366004610931565b6000828152600260205260409020546101009004811663ffffffff16151592915050565b6040519015158152602001610120565b610173600181565b60405163ffffffff9091168152602001610120565b610173604081565b6101a361019e36600461099c565b610309565b604051908152602001610120565b61015b6101bf366004610918565b6000908152600260208190526040909120015460ff1690565b6101eb6101e6366004610931565b6104fa565b005b600054610200906001600160a01b031681565b6040516001600160a01b039091168152602001610120565b6101a361022636600461099c565b610695565b6102b1610239366004610918565b604080516080810182526000808252602082018190529181018290526060810191909152506000908152600260208181526040928390208351608081018552815460ff8082161515835261010090910463ffffffff169382019390935260018201549481019490945290910154161515606082015290565b604051610120919081511515815260208083015163ffffffff16908201526040808301519082015260609182015115159181019190915260800190565b600154610200906001600160a01b031681565b610173600281565b60008481526002602081905260408220015460ff161561034457604051636489019160e01b8152600481018690526024015b60405180910390fd5b6000805460405163632c704360e11b81526001600160a01b039091169063c658e0869061037d9089908990899087908190600401610a6f565b6020604051808303816000875af115801561039c573d6000803e3d6000fd5b505050506040513d601f19601f820116820180604052508101906103c09190610afb565b600154604051631ce4ef1360e21b8152600481018390526001600160a01b03878116602483015260448201879052929350911690637393bc4c90606401600060405180830381600087803b15801561041757600080fd5b505af115801561042b573d6000803e3d6000fd5b5050604080516080810182526001808252600060208084018281528486018b8152606086018481528a855260028085529488902096518754935164ffffffffff1990941690151564ffffffff0019161761010063ffffffff90941693909302929092178655519385019390935591519201805460ff19169215159290921790915581516001600160a01b03891681529081018790528493508992507f0c903301268e9942773b5d8b4a89803a78b9a68e4f582724cb6d29f706549eaa910160405180910390a395945050505050565b6000828152600260205260409020805460ff1661052d5760405163727eabd760e11b81526004810184905260240161033b565b80546101009004821663ffffffff161561056957604051637d700fcd60e01b81526004810184905263ffffffff8316602482015260440161033b565b805463ffffffff80841661010080840492909216170264ffffffff001990911617815560018216158015906105a35750600281015460ff16155b156106555760028101805460ff1916600190811790915554604051639eef012b60e01b8152600481018590526001600160a01b0390911690639eef012b90602401600060405180830381600087803b1580156105fe57600080fd5b505af1158015610612573d6000803e3d6000fd5b50505050827f20441d5846016da1482806abb7b1c64ec643ed643cb1677541b375bfa935117d826001015460405161064c91815260200190565b60405180910390a25b60405163ffffffff8316815283907f264072e725a59c922d14a50f23a1be79ab993a3874f31d6d5e9bac01260d24d89060200160405180910390a2505050565b6000805460405163632c704360e11b815282916001600160a01b03169063c658e086906106ce9089908990899087908190600401610a6f565b6020604051808303816000875af11580156106ed573d6000803e3d6000fd5b505050506040513d601f19601f820116820180604052508101906107119190610afb565b600154604051631ce4ef1360e21b8152600481018390526001600160a01b03878116602483015260448201879052929350911690637393bc4c90606401600060405180830381600087803b15801561076857600080fd5b505af115801561077c573d6000803e3d6000fd5b5050604080516080810182526001808252600360208084019182528385018a81526060850184815260008a815260029384905287902095518654945164ffffffffff1990951690151564ffffffff0019161761010063ffffffff90951694909402939093178555518484015590519201805460ff191692151592909217909155549051639eef012b60e01b8152600481018590526001600160a01b039091169250639eef012b9150602401600060405180830381600087803b15801561084157600080fd5b505af1158015610855573d6000803e3d6000fd5b5050604080516001600160a01b0388168152602081018790528493508992507f0c903301268e9942773b5d8b4a89803a78b9a68e4f582724cb6d29f706549eaa910160405180910390a36040516003815281907f264072e725a59c922d14a50f23a1be79ab993a3874f31d6d5e9bac01260d24d89060200160405180910390a2807f20441d5846016da1482806abb7b1c64ec643ed643cb1677541b375bfa935117d8460405161090791815260200190565b60405180910390a295945050505050565b60006020828403121561092a57600080fd5b5035919050565b6000806040838503121561094457600080fd5b82359150602083013563ffffffff8116811461095f57600080fd5b809150509250929050565b634e487b7160e01b600052604160045260246000fd5b80356001600160a01b038116811461099757600080fd5b919050565b600080600080608085870312156109b257600080fd5b84359350602085013567ffffffffffffffff808211156109d157600080fd5b818701915087601f8301126109e557600080fd5b8135818111156109f7576109f761096a565b604051601f8201601f19908116603f01168101908382118183101715610a1f57610a1f61096a565b816040528281528a6020848701011115610a3857600080fd5b826020860160208301376000602084830101528097505050505050610a5f60408601610980565b9396929550929360600135925050565b8581526000602060a08184015286518060a085015260005b81811015610aa35788810183015185820160c001528201610a87565b50600060c08286018101919091526001600160a01b038816604086015263ffffffff87166060860152601f909101601f19168401019150610ae19050565b67ffffffffffffffff831660808301529695505050505050565b600060208284031215610b0d57600080fd5b505191905056fea2646970667358221220c72e25714992901d95417ba6fa2c3e647d1abe2d605e65fed8d7dd5dae6bec9264736f6c63430008140033",
+  "devdoc": {
+    "kind": "dev",
+    "methods": {},
+    "version": 1
+  },
+  "userdoc": {
+    "kind": "user",
+    "methods": {},
+    "version": 1
+  },
+  "storageLayout": {
+    "storage": [
+      {
+        "astId": 35,
+        "contract": "contracts/RoyaltyNameWrapper.sol:RoyaltyNameWrapper",
+        "label": "nameWrapper",
+        "offset": 0,
+        "slot": "0",
+        "type": "t_contract(INameWrapper)17"
+      },
+      {
+        "astId": 38,
+        "contract": "contracts/RoyaltyNameWrapper.sol:RoyaltyNameWrapper",
+        "label": "royaltyManager",
+        "offset": 0,
+        "slot": "1",
+        "type": "t_contract(IRoyaltyManager)32"
+      },
+      {
+        "astId": 61,
+        "contract": "contracts/RoyaltyNameWrapper.sol:RoyaltyNameWrapper",
+        "label": "royaltyData",
+        "offset": 0,
+        "slot": "2",
+        "type": "t_mapping(t_bytes32,t_struct(RoyaltyData)56_storage)"
+      }
+    ],
+    "types": {
+      "t_bool": {
+        "encoding": "inplace",
+        "label": "bool",
+        "numberOfBytes": "1"
+      },
+      "t_bytes32": {
+        "encoding": "inplace",
+        "label": "bytes32",
+        "numberOfBytes": "32"
+      },
+      "t_contract(INameWrapper)17": {
+        "encoding": "inplace",
+        "label": "contract INameWrapper",
+        "numberOfBytes": "20"
+      },
+      "t_contract(IRoyaltyManager)32": {
+        "encoding": "inplace",
+        "label": "contract IRoyaltyManager",
+        "numberOfBytes": "20"
+      },
+      "t_mapping(t_bytes32,t_struct(RoyaltyData)56_storage)": {
+        "encoding": "mapping",
+        "key": "t_bytes32",
+        "label": "mapping(bytes32 => struct RoyaltyNameWrapper.RoyaltyData)",
+        "numberOfBytes": "32",
+        "value": "t_struct(RoyaltyData)56_storage"
+      },
+      "t_struct(RoyaltyData)56_storage": {
+        "encoding": "inplace",
+        "label": "struct RoyaltyNameWrapper.RoyaltyData",
+        "members": [
+          {
+            "astId": 49,
+            "contract": "contracts/RoyaltyNameWrapper.sol:RoyaltyNameWrapper",
+            "label": "hasRoyalty",
+            "offset": 0,
+            "slot": "0",
+            "type": "t_bool"
+          },
+          {
+            "astId": 51,
+            "contract": "contracts/RoyaltyNameWrapper.sol:RoyaltyNameWrapper",
+            "label": "fuses",
+            "offset": 1,
+            "slot": "0",
+            "type": "t_uint32"
+          },
+          {
+            "astId": 53,
+            "contract": "contracts/RoyaltyNameWrapper.sol:RoyaltyNameWrapper",
+            "label": "lockedAmount",
+            "offset": 0,
+            "slot": "1",
+            "type": "t_uint256"
+          },
+          {
+            "astId": 55,
+            "contract": "contracts/RoyaltyNameWrapper.sol:RoyaltyNameWrapper",
+            "label": "isLocked",
+            "offset": 0,
+            "slot": "2",
+            "type": "t_bool"
+          }
+        ],
+        "numberOfBytes": "96"
+      },
+      "t_uint256": {
+        "encoding": "inplace",
+        "label": "uint256",
+        "numberOfBytes": "32"
+      },
+      "t_uint32": {
+        "encoding": "inplace",
+        "label": "uint32",
+        "numberOfBytes": "4"
+      }
+    }
+  }
+}
