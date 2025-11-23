@@ -9,7 +9,7 @@ import { useSubdomainFactory } from "@/hooks/use-ens-royalty"
 import { toast } from "sonner"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { normalize } from "viem/ens"
-import { mainnet } from "wagmi/chains"
+import { sepolia } from "viem/chains"
 
 interface Beneficiary {
   input: string // Can be ENS name or address
@@ -41,10 +41,10 @@ export function CreateSubdomain() {
     }
   }, [address])
 
-  // ENS resolution hook for owner
+  // ENS resolution hook for owner (Sepolia testnet)
   const { data: ownerEnsAddress, isLoading: isResolvingOwner } = useEnsAddress({
     name: formData.ownerInput?.endsWith('.eth') ? normalize(formData.ownerInput) : undefined,
-    chainId: mainnet.id,
+    chainId: sepolia.id,
   })
 
   // Update owner address when ENS resolves
@@ -113,12 +113,12 @@ export function CreateSubdomain() {
       // Import required modules
       const { normalize } = await import('viem/ens')
       const { createPublicClient, http } = await import('viem')
-      const { mainnet } = await import('viem/chains')
+      const { sepolia } = await import('viem/chains')
       
-      // Create public client for ENS resolution
+      // Create public client for ENS resolution on Sepolia testnet
       const client = createPublicClient({
-        chain: mainnet,
-        transport: http('https://eth.llamarpc.com'), // Use reliable RPC endpoint
+        chain: sepolia,
+        transport: http(), // Use default Sepolia RPC
       })
       
       // Resolve ENS name
