@@ -38,6 +38,9 @@ export function DebugSplit() {
     },
   })
 
+  const beneficiaryAddress = beneficiary as string | undefined
+  const shareAmount = share as bigint | undefined
+
   return (
     <div className="space-y-6">
       <div>
@@ -76,25 +79,25 @@ export function DebugSplit() {
             <p className="text-xs text-muted-foreground mt-1">Try 0, 1, 2 to check each beneficiary</p>
           </div>
 
-          {beneficiary && (
+          {beneficiaryAddress && beneficiaryAddress !== "0x0000000000000000000000000000000000000000" && (
             <div className="border-t border-border pt-4 space-y-3">
               <div>
                 <p className="text-xs text-muted-foreground mb-1">Beneficiary Address:</p>
-                <p className="font-mono text-sm">{beneficiary as string}</p>
+                <p className="font-mono text-sm">{beneficiaryAddress}</p>
               </div>
               
-              {share && (
+              {shareAmount && (
                 <div>
                   <p className="text-xs text-muted-foreground mb-1">Share (BPS):</p>
                   <p className="font-mono text-sm">
-                    {(share as bigint).toString()} BPS = {(Number(share) / 100).toFixed(2)}%
+                    {shareAmount.toString()} BPS = {(Number(shareAmount) / 100).toFixed(2)}%
                   </p>
                 </div>
               )}
             </div>
           )}
 
-          {beneficiary === "0x0000000000000000000000000000000000000000" && (
+          {beneficiaryAddress === "0x0000000000000000000000000000000000000000" && (
             <div className="bg-destructive/10 border border-destructive/30 rounded-lg p-4">
               <p className="text-sm text-destructive font-semibold">⚠️ No beneficiary found at this index</p>
               <p className="text-xs text-muted-foreground mt-1">
@@ -103,7 +106,7 @@ export function DebugSplit() {
             </div>
           )}
 
-          {!beneficiary && domain && (
+          {!beneficiaryAddress && domain && (
             <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg p-4">
               <p className="text-sm text-amber-600 font-semibold">🔍 No data returned</p>
               <p className="text-xs text-muted-foreground mt-1">

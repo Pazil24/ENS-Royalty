@@ -29,10 +29,10 @@ export const ContractUI = ({ contractName }: ContractUIProps) => {
   if (!deployedContractData) {
     return (
       <p className="text-3xl mt-14">
-        No contract found by the name of {contractName} on chain {targetNetwork.name}!
+        No contract found by the name of {String(contractName)} on chain {targetNetwork.name}!
       </p>
     );
   }
 
-  return <Contract contractName={contractName as string} contract={deployedContractData} chainId={targetNetwork.id} />;
+  return <Contract contractName={String(contractName)} contract={deployedContractData} chainId={targetNetwork.id} />;
 };

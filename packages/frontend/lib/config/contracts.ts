@@ -10,11 +10,11 @@ export const CONTRACTS = {
     chainId: sepolia.id,
   },
   RoyaltyPaymentSplitter: {
-    address: '0x87B327e78Ced3F0B12D7FD0D09999Ee9d2899b2D' as `0x${string}`,
+    address: '0x0191ef763e9c8a031Fc21E06a7449C9768a74921' as `0x${string}`,
     chainId: sepolia.id,
   },
   SubdomainFactory: {
-    address: '0xF34EE6572A9E9D3eBa2e3936339ED7A8e7B9914F' as `0x${string}`,
+    address: '0xd9A6f65f9c00f483e06DDa300bC2c9acccDA10e8' as `0x${string}`,
     chainId: sepolia.id,
   },
 } as const;
