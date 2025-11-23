@@ -1,17 +1,22 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Plus, X, Lock, Info } from "lucide-react"
-import { useAccount } from "wagmi"
+import { Plus, X, Lock, Info, CheckCircle2 } from "lucide-react"
+import { useAccount, useEnsAddress, useEnsName } from "wagmi"
 import { useSubdomainFactory } from "@/hooks/use-ens-royalty"
 import { toast } from "sonner"
 import { Alert, AlertDescription } from "@/components/ui/alert"
+import { normalize } from "viem/ens"
+import { mainnet } from "wagmi/chains"
 
 interface Beneficiary {
-  address: string
-  share: number
+  input: string // Can be ENS name or address
+  resolvedAddress: string | null
+  sharePercent: string // Share in percentage (0-100)
+  isResolving: boolean
+  isResolved: boolean
 }
 
 export function CreateSubdomain() {
@@ -22,16 +27,39 @@ export function CreateSubdomain() {
   const [formData, setFormData] = useState({
     parentDomain: "",
     subdomainLabel: "",
-    ownerAddress: address || "",
+    ownerInput: "", // Can be ENS or address
+    ownerAddress: "",
     royaltyPercent: "10",
-    beneficiaries: [{ address: address || "", share: 10000 }] as Beneficiary[],
+    beneficiaries: [{ input: "", resolvedAddress: null, sharePercent: "100", isResolving: false, isResolved: false }] as Beneficiary[],
     isLocked: false,
   })
+
+  // Auto-populate owner with connected wallet address
+  useEffect(() => {
+    if (address && !formData.ownerInput) {
+      setFormData(prev => ({ ...prev, ownerInput: address, ownerAddress: address }))
+    }
+  }, [address])
+
+  // ENS resolution hook for owner
+  const { data: ownerEnsAddress, isLoading: isResolvingOwner } = useEnsAddress({
+    name: formData.ownerInput?.endsWith('.eth') ? normalize(formData.ownerInput) : undefined,
+    chainId: mainnet.id,
+  })
+
+  // Update owner address when ENS resolves
+  useEffect(() => {
+    if (formData.ownerInput?.startsWith('0x')) {
+      setFormData(prev => ({ ...prev, ownerAddress: formData.ownerInput }))
+    } else if (ownerEnsAddress) {
+      setFormData(prev => ({ ...prev, ownerAddress: ownerEnsAddress }))
+    }
+  }, [ownerEnsAddress, formData.ownerInput])
 
   const addBeneficiary = () => {
     setFormData({
       ...formData,
-      beneficiaries: [...formData.beneficiaries, { address: "", share: 0 }],
+      beneficiaries: [...formData.beneficiaries, { input: "", resolvedAddress: null, sharePercent: "0", isResolving: false, isResolved: false }],
     })
   }
 
@@ -46,14 +74,78 @@ export function CreateSubdomain() {
     })
   }
 
-  const updateBeneficiary = (idx: number, field: string, value: string | number) => {
+  const updateBeneficiary = (idx: number, field: string, value: string) => {
     const updated = [...formData.beneficiaries]
     updated[idx] = { ...updated[idx], [field]: value }
+    
+    // Reset resolution when input changes
+    if (field === 'input') {
+      updated[idx].isResolved = false
+      updated[idx].resolvedAddress = null
+    }
+    
     setFormData({ ...formData, beneficiaries: updated })
   }
 
-  const totalShares = formData.beneficiaries.reduce((sum, b) => sum + (b.share || 0), 0)
-  const totalPercentage = (totalShares / 100).toFixed(2)
+  const resolveBeneficiaryENS = async (idx: number) => {
+    const beneficiary = formData.beneficiaries[idx]
+    
+    if (beneficiary.input.startsWith('0x')) {
+      // It's already an address
+      const updated = [...formData.beneficiaries]
+      updated[idx] = { ...updated[idx], resolvedAddress: beneficiary.input, isResolved: true }
+      setFormData({ ...formData, beneficiaries: updated })
+      return
+    }
+    
+    if (!beneficiary.input.endsWith('.eth')) {
+      toast.error("Please enter a valid ENS name (ending with .eth) or 0x address")
+      return
+    }
+
+    // Mark as resolving
+    const updated = [...formData.beneficiaries]
+    updated[idx] = { ...updated[idx], isResolving: true }
+    setFormData({ ...formData, beneficiaries: updated })
+
+    try {
+      // Use dynamic import to resolve ENS
+      const { normalize } = await import('viem/ens')
+      const { createPublicClient, http } = await import('viem')
+      const { mainnet } = await import('viem/chains')
+      
+      const client = createPublicClient({
+        chain: mainnet,
+        transport: http(),
+      })
+      
+      const address = await client.getEnsAddress({
+        name: normalize(beneficiary.input),
+      })
+      
+      if (address) {
+        const updated = [...formData.beneficiaries]
+        updated[idx] = { ...updated[idx], resolvedAddress: address, isResolving: false, isResolved: true }
+        setFormData({ ...formData, beneficiaries: updated })
+        toast.success(`Resolved ${beneficiary.input} to ${address.slice(0, 6)}...${address.slice(-4)}`)
+      } else {
+        throw new Error("ENS name not found")
+      }
+    } catch (error: any) {
+      const updated = [...formData.beneficiaries]
+      updated[idx] = { ...updated[idx], isResolving: false, isResolved: false, resolvedAddress: null }
+      setFormData({ ...formData, beneficiaries: updated })
+      toast.error(`Failed to resolve ${beneficiary.input}`)
+    }
+  }
+
+  // Calculate total percentage
+  const totalPercent = formData.beneficiaries.reduce((sum, b) => sum + parseFloat(b.sharePercent || "0"), 0)
+  
+  // Convert percentage to BPS (basis points) for smart contract
+  const percentToBps = (percent: number) => {
+    return Math.round(percent * 100) // 1% = 100 BPS, 50% = 5000 BPS, 100% = 10000 BPS
+  }
 
   const handleCreateSubdomain = async () => {
     if (!isConnected) {
@@ -62,16 +154,16 @@ export function CreateSubdomain() {
     }
 
     try {
-      // Validate total shares = 10000 (100%)
-      if (totalShares !== 10000) {
-        toast.error(`Total shares must equal 10000 (100%). Current: ${totalShares}`)
+      // Validate total percentage = 100%
+      if (totalPercent !== 100) {
+        toast.error(`Total percentage must equal 100%. Current total: ${totalPercent.toFixed(2)}%`)
         return
       }
 
-      // Validate addresses
-      const invalidAddress = formData.beneficiaries.find((b) => !b.address || !b.address.startsWith("0x"))
-      if (invalidAddress) {
-        toast.error("All beneficiary addresses must be valid")
+      // Validate all beneficiaries are resolved
+      const unresolvedBeneficiary = formData.beneficiaries.find(b => !b.resolvedAddress || !b.isResolved)
+      if (unresolvedBeneficiary) {
+        toast.error("Please resolve all beneficiary ENS names or addresses")
         return
       }
 
@@ -80,8 +172,20 @@ export function CreateSubdomain() {
         return
       }
 
-      const beneficiaryAddresses = formData.beneficiaries.map((b) => b.address)
-      const beneficiaryShares = formData.beneficiaries.map((b) => b.share)
+      // Convert percentages to BPS for smart contract
+      const beneficiaryAddresses = formData.beneficiaries.map((b) => b.resolvedAddress!)
+      const beneficiaryShares = formData.beneficiaries.map((b) => {
+        const percent = parseFloat(b.sharePercent || "0")
+        return percentToBps(percent)
+      })
+
+      // Verify shares total to exactly 10000 BPS
+      const totalBps = beneficiaryShares.reduce((sum, s) => sum + s, 0)
+      if (totalBps !== 10000) {
+        // Adjust last share to make it exactly 10000 (handle rounding errors)
+        const difference = 10000 - totalBps
+        beneficiaryShares[beneficiaryShares.length - 1] += difference
+      }
 
       toast.loading("Creating subdomain...")
 
@@ -117,9 +221,10 @@ export function CreateSubdomain() {
       setFormData({
         parentDomain: "",
         subdomainLabel: "",
+        ownerInput: address || "",
         ownerAddress: address || "",
         royaltyPercent: "10",
-        beneficiaries: [{ address: address || "", share: 10000 }],
+        beneficiaries: [{ input: address || "", resolvedAddress: address || null, sharePercent: "100", isResolving: false, isResolved: true }],
         isLocked: false,
       })
       setStep(1)
@@ -141,7 +246,7 @@ export function CreateSubdomain() {
       <Alert className="mb-6">
         <Info className="h-4 w-4" />
         <AlertDescription>
-          Shares are in basis points (10000 = 100%). Each beneficiary gets their proportional share of revenues.
+          Enter share percentages (0-100%). Total must equal 100%. You can use ENS names or addresses for beneficiaries.
         </AlertDescription>
       </Alert>
 
@@ -189,15 +294,26 @@ export function CreateSubdomain() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium mb-2">Owner Address *</label>
-              <input
-                type="text"
-                placeholder="0x..."
-                value={formData.ownerAddress}
-                onChange={(e) => setFormData({ ...formData, ownerAddress: e.target.value })}
-                className="w-full bg-input border border-border rounded-lg px-4 py-2 text-foreground placeholder:text-muted-foreground focus:border-primary outline-none transition"
-              />
-              <p className="text-xs text-muted-foreground mt-1">Who will own this subdomain</p>
+              <label className="block text-sm font-medium mb-2">Owner Address or ENS *</label>
+              <div className="space-y-2">
+                <input
+                  type="text"
+                  placeholder="0x... or vitalik.eth"
+                  value={formData.ownerInput}
+                  onChange={(e) => setFormData({ ...formData, ownerInput: e.target.value })}
+                  className="w-full bg-input border border-border rounded-lg px-4 py-2 text-foreground placeholder:text-muted-foreground focus:border-primary outline-none transition"
+                />
+                {isResolvingOwner && (
+                  <p className="text-xs text-blue-500">🔄 Resolving ENS name...</p>
+                )}
+                {formData.ownerAddress && formData.ownerAddress !== formData.ownerInput && (
+                  <p className="text-xs text-green-500 flex items-center gap-1">
+                    <CheckCircle2 className="h-3 w-3" />
+                    Resolved to: {formData.ownerAddress.slice(0, 10)}...{formData.ownerAddress.slice(-8)}
+                  </p>
+                )}
+              </div>
+              <p className="text-xs text-muted-foreground mt-1">Who will own this subdomain (defaults to your address)</p>
             </div>
 
             <div>
@@ -221,39 +337,61 @@ export function CreateSubdomain() {
         {step === 2 && (
           <div className="space-y-4">
             <h2 className="text-xl font-bold">Beneficiaries & Revenue Split</h2>
-            <p className="text-sm text-muted-foreground">Configure how revenue is split (must total 10000 = 100%)</p>
+            <p className="text-sm text-muted-foreground">Enter percentage shares (must total 100%)</p>
 
             <div className="space-y-3">
               {formData.beneficiaries.map((beneficiary, idx) => (
-                <div key={idx} className="flex gap-3 items-end pb-3 border-b border-border">
-                  <div className="flex-1">
-                    <label className="block text-xs font-medium text-muted-foreground mb-1">Address</label>
-                    <input
-                      type="text"
-                      placeholder="0x..."
-                      value={beneficiary.address}
-                      onChange={(e) => updateBeneficiary(idx, "address", e.target.value)}
-                      className="w-full bg-input border border-border rounded-lg px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary outline-none transition"
-                    />
+                <div key={idx} className="space-y-2 pb-3 border-b border-border">
+                  <div className="flex gap-3 items-end">
+                    <div className="flex-1">
+                      <label className="block text-xs font-medium text-muted-foreground mb-1">ENS Name or Address</label>
+                      <input
+                        type="text"
+                        placeholder="vitalik.eth or 0x..."
+                        value={beneficiary.input}
+                        onChange={(e) => updateBeneficiary(idx, "input", e.target.value)}
+                        className="w-full bg-input border border-border rounded-lg px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary outline-none transition"
+                      />
+                    </div>
+                    <div className="w-28">
+                      <label className="block text-xs font-medium text-muted-foreground mb-1">Share (%)</label>
+                      <input
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        max="100"
+                        placeholder="50"
+                        value={beneficiary.sharePercent}
+                        onChange={(e) => updateBeneficiary(idx, "sharePercent", e.target.value)}
+                        className="w-full bg-input border border-border rounded-lg px-3 py-2 text-sm text-foreground focus:border-primary outline-none transition"
+                      />
+                    </div>
+                    {!beneficiary.isResolved && beneficiary.input && (
+                      <Button
+                        type="button"
+                        size="sm"
+                        onClick={() => resolveBeneficiaryENS(idx)}
+                        disabled={beneficiary.isResolving}
+                        className="whitespace-nowrap"
+                      >
+                        {beneficiary.isResolving ? "..." : "Resolve"}
+                      </Button>
+                    )}
+                    {formData.beneficiaries.length > 1 && (
+                      <button
+                        onClick={() => removeBeneficiary(idx)}
+                        className="p-2 hover:bg-destructive/10 rounded-lg transition"
+                      >
+                        <X className="w-4 h-4 text-destructive" />
+                      </button>
+                    )}
                   </div>
-                  <div className="w-28">
-                    <label className="block text-xs font-medium text-muted-foreground mb-1">Share (BPS)</label>
-                    <input
-                      type="number"
-                      min="0"
-                      max="10000"
-                      value={beneficiary.share}
-                      onChange={(e) => updateBeneficiary(idx, "share", Number.parseInt(e.target.value) || 0)}
-                      className="w-full bg-input border border-border rounded-lg px-3 py-2 text-sm text-foreground focus:border-primary outline-none transition"
-                    />
-                  </div>
-                  {formData.beneficiaries.length > 1 && (
-                    <button
-                      onClick={() => removeBeneficiary(idx)}
-                      className="p-2 hover:bg-destructive/10 rounded-lg transition"
-                    >
-                      <X className="w-4 h-4 text-destructive" />
-                    </button>
+                  
+                  {beneficiary.isResolved && beneficiary.resolvedAddress && (
+                    <div className="flex items-center gap-1 text-xs text-green-500">
+                      <CheckCircle2 className="h-3 w-3" />
+                      <span className="font-mono">{beneficiary.resolvedAddress.slice(0, 10)}...{beneficiary.resolvedAddress.slice(-8)}</span>
+                    </div>
                   )}
                 </div>
               ))}
@@ -266,27 +404,33 @@ export function CreateSubdomain() {
               <Plus className="w-4 h-4" /> Add Beneficiary
             </button>
 
-            <div
-              className={`border rounded-lg p-4 ${
-                totalShares === 10000
-                  ? "bg-primary/5 border-primary/30"
-                  : "bg-destructive/5 border-destructive/30"
-              }`}
-            >
+            <div className={`border rounded-lg p-4 ${
+              totalPercent === 100 ? "bg-primary/5 border-primary/30" : "bg-destructive/5 border-destructive/30"
+            }`}>
               <p className="text-sm font-medium mb-2">
-                Total: {totalShares} BPS ({totalPercentage}%)
+                Total: {totalPercent.toFixed(2)}%
               </p>
               <div className="h-2 bg-border rounded-full overflow-hidden">
                 <div
                   className={`h-full transition-all ${
-                    totalShares === 10000 ? "bg-gradient-to-r from-primary to-accent" : "bg-destructive"
+                    totalPercent === 100 ? "bg-gradient-to-r from-primary to-accent" : "bg-destructive"
                   }`}
-                  style={{ width: `${Math.min((totalShares / 10000) * 100, 100)}%` }}
+                  style={{ width: `${Math.min(totalPercent, 100)}%` }}
                 />
               </div>
-              {totalShares !== 10000 && (
-                <p className="text-xs text-destructive mt-2">Total must equal 10000 (100%)</p>
+              {totalPercent !== 100 && (
+                <p className="text-xs text-destructive mt-2">
+                  {totalPercent < 100 ? `Missing ${(100 - totalPercent).toFixed(2)}%` : `Over by ${(totalPercent - 100).toFixed(2)}%`}
+                </p>
               )}
+              <div className="mt-3 space-y-1">
+                {formData.beneficiaries.map((b, i) => (
+                  <div key={i} className="text-xs flex justify-between">
+                    <span>{b.input || `Beneficiary ${i + 1}`}</span>
+                    <span className="font-semibold">{b.sharePercent}%</span>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
         )}
@@ -360,12 +504,20 @@ export function CreateSubdomain() {
 
             <div className="bg-primary/5 border border-primary/30 rounded-lg p-4 space-y-2">
               <p className="text-sm text-primary font-medium">Beneficiary Breakdown:</p>
-              {formData.beneficiaries.map((b, idx) => (
-                <div key={idx} className="text-xs flex justify-between">
-                  <span className="font-mono">{b.address.slice(0, 10)}...</span>
-                  <span className="font-semibold">{b.share} BPS ({(b.share / 100).toFixed(2)}%)</span>
-                </div>
-              ))}
+              {formData.beneficiaries.map((b, idx) => {
+                const percent = parseFloat(b.sharePercent || "0")
+                return (
+                  <div key={idx} className="text-xs space-y-1">
+                    <div className="flex justify-between">
+                      <span className="font-medium">{b.input || `Beneficiary ${idx + 1}`}</span>
+                      <span className="font-semibold">{b.sharePercent}%</span>
+                    </div>
+                    {b.resolvedAddress && (
+                      <p className="font-mono text-muted-foreground">{b.resolvedAddress.slice(0, 10)}...{b.resolvedAddress.slice(-8)}</p>
+                    )}
+                  </div>
+                )
+              })}
             </div>
 
             <div className="bg-accent/10 border border-accent/30 rounded-lg p-4">
@@ -389,7 +541,7 @@ export function CreateSubdomain() {
               className="bg-gradient-to-r from-primary to-accent hover:shadow-lg"
               disabled={
                 (step === 1 && (!formData.parentDomain || !formData.subdomainLabel || !formData.ownerAddress)) ||
-                (step === 2 && totalShares !== 10000)
+                (step === 2 && (totalPercent !== 100 || formData.beneficiaries.some(b => !b.isResolved)))
               }
             >
               Next
