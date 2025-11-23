@@ -9,17 +9,31 @@ contract ENSRoyaltyManager is ERC1155, Ownable {
     
     mapping(bytes32 => uint256) public totalSupply;
     mapping(bytes32 => uint256) public royaltyRate;
+    mapping(bytes32 => bool) public isSupplyLocked;
     
     event RoyaltyMinted(bytes32 indexed node, address indexed to, uint256 amount);
     event RoyaltyRateSet(bytes32 indexed node, uint256 rate);
+    event SupplyLocked(bytes32 indexed node, uint256 finalSupply);
+
+    error SupplyAlreadyLocked(bytes32 node);
+    error CannotMintLockedSupply(bytes32 node);
 
     constructor() ERC1155("https://api.ensroyalty.eth/metadata/{id}") Ownable(msg.sender) {}
 
     function mintRoyalty(bytes32 node, address to, uint256 amount) external onlyOwner {
+        if (isSupplyLocked[node]) revert CannotMintLockedSupply(node);
+        
         uint256 tokenId = uint256(node);
         _mint(to, tokenId, amount, "");
         totalSupply[node] += amount;
         emit RoyaltyMinted(node, to, amount);
+    }
+
+    function lockRoyaltySupply(bytes32 node) external onlyOwner {
+        if (isSupplyLocked[node]) revert SupplyAlreadyLocked(node);
+        
+        isSupplyLocked[node] = true;
+        emit SupplyLocked(node, totalSupply[node]);
     }
 
     function setRoyaltyRate(bytes32 node, uint256 rate) external onlyOwner {
@@ -37,3 +51,4 @@ contract ENSRoyaltyManager is ERC1155, Ownable {
         return (balance * 10000) / total;
     }
 }
+
